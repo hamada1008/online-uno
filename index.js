@@ -10,7 +10,9 @@ app.use(express.json());
 app.use(cors());
 const PORT = process.env.PORT || 5000;
 
-app.use("/api", require("./routes/auth.js"));
+app.use("/api", require("./routes/auth"));
+app.use("/api", require("./routes/private"));
+app.use("/api", require("./routes/rating"));
 app.use(errorHandler);
 const server = app.listen(PORT, () => {
   databaseConnection();
@@ -21,3 +23,5 @@ process.on("unhandledRejection", (err, promise) => {
   console.log(`Logged Error: ${err.message}`);
   server.close(() => process.exit(1));
 });
+
+module.exports = app;

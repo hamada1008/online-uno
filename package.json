@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --recursive --timeout 120000 --exit",
+    "nyc": "nyc mocha --recursive --timeout 120000 --exit"
   },
   "keywords": [],
   "author": "",
@@ -17,5 +18,13 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.1.0",
     "nodemon": "^2.0.15"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "chai-http": "^4.3.0",
+    "faker": "^5.5.3",
+    "mocha": "^9.1.3",
+    "mockgoose": "^8.0.4",
+    "nyc": "^15.1.0"
   }
 }
