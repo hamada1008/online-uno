@@ -216,7 +216,14 @@ describe("Users routes", () => {
       .end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.contain.property("success").to.equal(true);
-        expect(res.body).to.contain.property("msg").to.be.equal("Authorized");
+        expect(res.body)
+          .to.contain.property("msg")
+          .to.contain.property("id")
+          .to.be.equal(userId);
+        expect(res.body)
+          .to.contain.property("msg")
+          .to.contain.property("username")
+          .to.be.equal(preSave.username);
         done();
       });
   });
@@ -228,7 +235,14 @@ describe("Users routes", () => {
       .end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.contain.property("success").to.equal(true);
-        expect(res.body).to.contain.property("msg").to.be.equal("Authorized");
+        expect(res.body)
+          .to.contain.property("msg")
+          .to.contain.property("id")
+          .to.have.lengthOf(24);
+        expect(res.body)
+          .to.contain.property("msg")
+          .to.contain.property("username")
+          .to.be.equal(newUser.username);
         done();
       });
   });
@@ -293,11 +307,11 @@ describe("Users routes", () => {
       .get(`${rating}/${userId}X/rating`)
       .set("Authorization", `Bearer ${token}`)
       .end((err, res) => {
-        expect(res).to.have.status(404);
+        expect(res).to.have.status(401);
         expect(res.body).to.contain.property("success").to.equal(false);
         expect(res.body)
           .to.contain.property("msg")
-          .to.be.equal("Could not fetch this user's rating");
+          .to.be.equal("You are not authorized to access this content");
         done();
       });
   });
@@ -340,24 +354,40 @@ describe("Users routes", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ gameRating: faker.datatype.number() })
       .end((err, res) => {
-        expect(res).to.have.status(404);
+        expect(res).to.have.status(401);
         expect(res.body).to.contain.property("success").to.equal(false);
         expect(res.body)
           .to.contain.property("msg")
-          .to.be.equal("Could not update this user's rating");
+          .to.be.equal("You are not authorized to access this content");
+        done();
+      });
+  });
+  it("Should not update the user's rating (another user id)", (done) => {
+    chai
+      .request(server)
+      .put(`${rating}/${userId}X/rating`)
+      .set("Authorization", `Bearer ${newToken}`)
+      .send({ gameRating: faker.datatype.number() })
+      .end((err, res) => {
+        expect(res).to.have.status(401);
+        expect(res.body).to.contain.property("success").to.equal(false);
+        expect(res.body)
+          .to.contain.property("msg")
+          .to.be.equal("You are not authorized to access this content");
         done();
       });
   });
   it("Should not update the user's rating (missing game rating)", (done) => {
     chai
       .request(server)
-      .put(`${rating}/${userId}X/rating`)
+      .put(`${rating}/${userId}/rating`)
       .set("Authorization", `Bearer ${token}`)
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.contain.property("success").to.equal(false);
         expect(res.body)
           .to.contain.property("msg")
+          .to.be.a("string")
           .to.be.equal("Could not update this user's rating");
         done();
       });

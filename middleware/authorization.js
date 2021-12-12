@@ -18,6 +18,11 @@ const authorization = async (req, res, next) => {
     if (!user) {
       return next(new ErrorRes("Could not find a user with this id", 404));
     }
+    if (req.params.id && user.id !== req.params.id) {
+      return next(
+        new ErrorRes("You are not authorized to access this content", 401)
+      );
+    }
     req.user = user;
     next();
   } catch (error) {

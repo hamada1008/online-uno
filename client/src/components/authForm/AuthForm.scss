@@ -1,0 +1,15 @@
+.auth-form {
+  display: flex;
+  flex-flow: row wrap;
+  width: 500px;
+  background: pink;
+  margin: auto;
+  label {
+    width: 29%;
+    margin: auto;
+  }
+  input {
+    width: 70%;
+    margin: auto;
+  }
+}

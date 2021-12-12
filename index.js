@@ -11,8 +11,8 @@ app.use(cors());
 const PORT = process.env.PORT || 5000;
 
 app.use("/api", require("./routes/auth"));
-app.use("/api", require("./routes/private"));
 app.use("/api", require("./routes/rating"));
+app.use("/api", require("./routes/private"));
 app.use(errorHandler);
 const server = app.listen(PORT, () => {
   databaseConnection();
