@@ -9,10 +9,12 @@ import React, {
 import deck from "../../cards/deck.js";
 import colors from "../../cards/colors.ts";
 import numbers from "../../cards/number.ts";
-import types from "../../cards/types.ts";
+import cardTypes from "../../cards/types.ts";
 import CardImage from "./CardImage.js";
+import PickColorPrompt from "./PickColorPrompt.js";
+import ChallengePrompt from "./ChallengePrompt.js";
 import arrayShuffle from "array-shuffle";
-import { setTimeout } from "timers";
+
 const UnoGame = () => {
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
@@ -33,12 +35,21 @@ const UnoGame = () => {
   });
   const [nstate, setNState] = useState(false);
   const [nstate2, setNState2] = useState(false);
+  const [isColorPrompt, setIsColorPrompt] = useState(false);
+  const [isChallengePrompt, setIsChallengePrompt] = useState(false);
+  const [wildCardPlayerData, setWildCardPlayerData] = useState({
+    cardType: null,
+    player: null,
+  });
+  const [promptChosenColor, setPromptChosenColor] = useState(null);
+  const [promptChallengeResult, setPromptChallengeResult] = useState(null);
+
   useEffect(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
     setPlayerTwoHand(gameDeck.splice(0, 7));
     while (true) {
       let firstCard = gameDeck[0];
-      if (firstCard.type === types.NORMAL) {
+      if (firstCard.type === cardTypes.NORMAL) {
         setPileFirstCard(gameDeck.slice(0, 1)[0]);
         setCardPile(gameDeck.splice(0, 1));
         break;
@@ -91,11 +102,13 @@ const UnoGame = () => {
     setCardPile([pileFirstCard]);
   }, [pileFirstCard, gameStart, cardPile]);
 
+  //merges deck with pile whenever draw pile becomes empty
   useEffect(() => {
     if (deckPile.length !== 0) return;
     mergeDeckWithPile();
   }, [mergeDeckWithPile, deckPile, drawFromPileAfterShuffle]);
 
+  //draws cards after merging piles if the drawn cards should exceed deck size
   useEffect(() => {
     if (!gameStart) return;
     const { player, numberOfCards } = drawFromPileAfterShuffle;
@@ -103,6 +116,44 @@ const UnoGame = () => {
     cardDrawLogicHandling(player, numberOfCards);
   }, [mergeDeckWithPile]);
 
+  //executing logic after a WILD card is played
+  useEffect(() => {
+    if (!gameStart) return;
+    const { cardType, player } = wildCardPlayerData;
+    if (!promptChosenColor || !!isColorPrompt || !cardType) return;
+    const card = { type: cardType, number: null, color: null };
+    console.log(card, player);
+    cardPlayingLogicHandling(card, player, promptChosenColor);
+    if (cardType === cardTypes.WILD_FOUR) {
+      setIsChallengePrompt(true);
+    }
+    setWildCardPlayerData({ player: null, cardType: null });
+    setTurnCount((prevState) => !prevState);
+  }, [promptChosenColor, gameStart]);
+
+  //executing challenge logic
+
+  useEffect(() => {
+    if (!gameStart) return;
+    const { player } = wildCardPlayerData;
+    if (!promptChallengeResult || !!isChallengePrompt) return;
+    switch (challengeAccepted(player)) {
+      case "declined":
+        cardDrawLogicHandling(player, 4);
+        break;
+      case "won":
+        cardDrawLogicHandling(player === 1 ? 2 : 1, 6);
+        break;
+      case "lost":
+        cardDrawLogicHandling(player, 6);
+        break;
+      default:
+        break;
+    }
+    setPromptChallengeResult(null);
+  }, [isChallengePrompt, gameStart]);
+
+  // player 2 AI
   useEffect(() => {
     if (!nstate) return;
     for (let i of playerTwoHand) {
@@ -112,23 +163,20 @@ const UnoGame = () => {
       }
     }
   }, [playerOneHand]);
-  useEffect(() => {
-    if (!nstate2) return;
-    for (let i of playerOneHand) {
-      if (playCard(i, 1, true)) {
-        playCard(i, 1, false);
-        return;
-      }
-    }
-  }, [playerTwoHand]);
+
   const cardPlayingLogicHandling = (card, player, newColor) => {
     setCardPile((prevState) => [...prevState, card]);
+    console.log(card, playerOneHand);
     !newColor
       ? setPileFirstCard(card)
       : setPileFirstCard({ ...card, color: newColor });
     player === 1
-      ? setPlayerOneHand((prevState) => prevState.filter((el) => el !== card))
-      : setPlayerTwoHand((prevState) => prevState.filter((el) => el !== card));
+      ? setPlayerOneHand((prevState) =>
+          prevState.filter((el) => JSON.stringify(el) !== JSON.stringify(card))
+        )
+      : setPlayerTwoHand((prevState) =>
+          prevState.filter((el) => JSON.stringify(el) !== JSON.stringify(card))
+        );
   };
 
   const cardDrawLogicHandling = (player, numberOfCardsToDraw) => {
@@ -168,12 +216,11 @@ const UnoGame = () => {
   };
 
   const playCard = (card, player, test) => {
-    let newColor;
     let isCardPlayable = false;
     if ((player === 2 && turnCount) || (player === 1 && !turnCount))
       return isCardPlayable;
     switch (card.type) {
-      case types.NORMAL:
+      case cardTypes.NORMAL:
         if (
           card.color === pileFirstCard.color ||
           card.number === pileFirstCard.number
@@ -184,7 +231,7 @@ const UnoGame = () => {
           setTurnCount((prevState) => !prevState);
         }
         break;
-      case types.SPECIAL:
+      case cardTypes.SPECIAL:
         if (
           card.color === pileFirstCard.color ||
           card.number === pileFirstCard.number
@@ -197,45 +244,32 @@ const UnoGame = () => {
           if (test) break;
           cardPlayingLogicHandling(card, player);
 
-          if (card.type === types.SPECIAL && card.number === numbers.DRAW_TWO) {
+          if (
+            card.type === cardTypes.SPECIAL &&
+            card.number === numbers.DRAW_TWO
+          ) {
             cardDrawLogicHandling(player, 2);
           }
         }
         break;
-      case types.WILD:
+      case cardTypes.WILD:
         isCardPlayable = true;
         if (test) break;
-        newColor = prompt("choose color");
-        cardPlayingLogicHandling(card, player, newColor);
-        setTurnCount((prevState) => !prevState);
-
+        setIsColorPrompt(true);
+        setWildCardPlayerData({ cardType: cardTypes.WILD, player });
         break;
-      case types.WILD_FOUR:
+      case cardTypes.WILD_FOUR:
         if (deckPile.length + cardPile.length < 6) {
           console.log("cannot draw from deck unless you play cards in pile");
           return isCardPlayable;
         }
         isCardPlayable = true;
         if (test) break;
-        newColor = prompt("choose color");
-        switch (challengeAccepted(player)) {
-          case "declined":
-            cardDrawLogicHandling(player, 4);
-            break;
-          case "won":
-            cardDrawLogicHandling(player === 1 ? 2 : 1, 6);
-            break;
-          case "lost":
-            cardDrawLogicHandling(player, 6);
-            break;
-          default:
-            break;
-        }
-
-        cardPlayingLogicHandling(card, player, newColor);
+        setIsColorPrompt(true);
+        setWildCardPlayerData({ cardType: cardTypes.WILD_FOUR, player });
         break;
       default:
-        return;
+        break;
     }
     if (
       player === 1 &&
@@ -304,8 +338,7 @@ const UnoGame = () => {
 
   //challenge handler
   const challengeAccepted = (player) => {
-    const choice = prompt("accept or decline (yes or no)");
-    if (choice === "no") {
+    if (promptChallengeResult === "declined") {
       console.log("declined");
       return "declined";
     }
@@ -313,7 +346,7 @@ const UnoGame = () => {
     const challengedPlyerHand = player === 1 ? playerOneHand : playerTwoHand;
     let challengeResult = "lost";
     for (let i of challengedPlyerHand) {
-      if (i.type === types.WILD_FOUR) break;
+      if (i.type === cardTypes.WILD_FOUR) break;
       if (playCard(i, player, true)) {
         challengeResult = "won";
         break;
@@ -336,7 +369,7 @@ const UnoGame = () => {
           style={{
             color: "red",
             position: "absolute",
-            fontSize: 50,
+            fontSize: 40,
             transform: "translateX(-110px)",
           }}
         >
@@ -348,7 +381,6 @@ const UnoGame = () => {
           <CardImage card={card} />
         </span>
       ))}
-
       <p>player 1 hand</p>
       <button onClick={pileDrawlogicHandling.bind(this, 2)}>DRAW</button>
       <button onClick={unoButtonLogicHandling.bind(this, 1)}>UNO</button>
@@ -357,7 +389,7 @@ const UnoGame = () => {
           style={{
             color: "red",
             position: "absolute",
-            fontSize: 50,
+            fontSize: 40,
             transform: "translateX(-110px)",
           }}
         >
@@ -401,6 +433,18 @@ const UnoGame = () => {
           playerOneHand.length}
       </span>
       <br />
+      <PickColorPrompt
+        isColorPrompt={isColorPrompt}
+        setIsColorPrompt={setIsColorPrompt}
+        setPromptChosenColor={setPromptChosenColor}
+        currentPlayer={turnCount ? 1 : 2}
+      />
+      <ChallengePrompt
+        isChallengePrompt={isChallengePrompt}
+        setIsChallengePrompt={setIsChallengePrompt}
+        setPromptChallengeResult={setPromptChallengeResult}
+        currentPlayer={turnCount ? 1 : 2}
+      />
     </div>
   );
 };
