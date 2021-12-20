@@ -1,19 +1,14 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import arrayShuffle from "array-shuffle";
 import deck from "../../cards/deck.js";
-import colors from "../../cards/colors.ts";
-import numbers from "../../cards/number.ts";
+import cardColors from "../../cards/colors.ts";
+import cardNumbers from "../../cards/number.ts";
 import cardTypes from "../../cards/types.ts";
 import CardImage from "./CardImage.js";
 import PickColorPrompt from "./PickColorPrompt.js";
 import ChallengePrompt from "./ChallengePrompt.js";
-import arrayShuffle from "array-shuffle";
+import WinnerAnnouncer from "./WinnerAnnouncer.js";
+import { botAINormal, botAIChallenge } from "../../utils/botAI.ts";
 
 const UnoGame = () => {
   let gameDeck = deck.map((el) => el);
@@ -29,20 +24,23 @@ const UnoGame = () => {
   const [turnCount, setTurnCount] = useState(true);
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
+  const [nstate, setNState] = useState(true);
+  const [isColorPrompt, setIsColorPrompt] = useState(false);
+  const [isChallengePrompt, setIsChallengePrompt] = useState(false);
+  const [promptChosenColor, setPromptChosenColor] = useState(null);
+  const [promptChallengeResult, setPromptChallengeResult] = useState(null);
   const [drawFromPileAfterShuffle, setDrawFromPileAfterShuffle] = useState({
     player: null,
     numberOfCards: 0,
   });
-  const [nstate, setNState] = useState(false);
-  const [nstate2, setNState2] = useState(false);
-  const [isColorPrompt, setIsColorPrompt] = useState(false);
-  const [isChallengePrompt, setIsChallengePrompt] = useState(false);
+  const [isWinner, setIsWinner] = useState({
+    exist: false,
+    winningPlayer: null,
+  });
   const [wildCardPlayerData, setWildCardPlayerData] = useState({
     cardType: null,
     player: null,
   });
-  const [promptChosenColor, setPromptChosenColor] = useState(null);
-  const [promptChallengeResult, setPromptChallengeResult] = useState(null);
 
   useEffect(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
@@ -67,10 +65,10 @@ const UnoGame = () => {
     if (!gameStart) return;
     switch (true) {
       case playerOneHand.length === 0:
-        console.log("player 1 won the game");
+        setIsWinner({ exist: true, winningPlayer: 1 });
         return;
       case playerTwoHand.length === 0:
-        console.log("player 2 won the game");
+        setIsWinner({ exist: true, winningPlayer: 2 });
         return;
       default:
         return;
@@ -88,7 +86,7 @@ const UnoGame = () => {
       if (playCard(i, currentPlayer, true)) canPlayCard = true;
     }
     if (!canPlayCard) {
-      alert("no card can be played, it is next player turn");
+      console.log("no card can be played, it is next player turn");
       setTurnCount((prevState) => !prevState);
     }
   }, [wasCardDrawnFromDeckPile]);
@@ -122,13 +120,14 @@ const UnoGame = () => {
     const { cardType, player } = wildCardPlayerData;
     if (!promptChosenColor || !!isColorPrompt || !cardType) return;
     const card = { type: cardType, number: null, color: null };
-    console.log(card, player);
     cardPlayingLogicHandling(card, player, promptChosenColor);
     if (cardType === cardTypes.WILD_FOUR) {
       setIsChallengePrompt(true);
     }
-    setWildCardPlayerData({ player: null, cardType: null });
-    setTurnCount((prevState) => !prevState);
+    if (cardType === cardTypes.WILD) {
+      setWildCardPlayerData({ player: null, cardType: null });
+      setTurnCount((prevState) => !prevState);
+    }
   }, [promptChosenColor, gameStart]);
 
   //executing challenge logic
@@ -150,33 +149,52 @@ const UnoGame = () => {
       default:
         break;
     }
+    setWildCardPlayerData({ player: null, cardType: null });
     setPromptChallengeResult(null);
-  }, [isChallengePrompt, gameStart]);
+  }, [promptChallengeResult, gameStart]);
 
   // player 2 AI
   useEffect(() => {
     if (!nstate) return;
-    for (let i of playerTwoHand) {
-      if (playCard(i, 2, true)) {
-        playCard(i, 2, false);
-        return;
-      }
+    if (turnCount && isChallengePrompt) {
+      botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
     }
-  }, [playerOneHand]);
+    if (!turnCount && isChallengePrompt) {
+      return;
+    }
+    if (turnCount) return;
+    if (playerTwoHand.length === 2) {
+      unoButtonLogicHandling(2);
+    }
+    botAINormal(
+      playCard,
+      isColorPrompt,
+      setIsColorPrompt,
+      setPromptChosenColor,
+      2,
+      playerTwoHand,
+      pileDrawlogicHandling
+    );
+  }, [turnCount, nstate, isChallengePrompt, isColorPrompt, playerTwoHand]);
 
   const cardPlayingLogicHandling = (card, player, newColor) => {
+    const filterHand = (prevState) => {
+      let cardIndex = -1;
+      for (let i in prevState) {
+        if (JSON.stringify(prevState[i]) === JSON.stringify(card)) {
+          cardIndex = Number(i);
+          break;
+        }
+      }
+      return prevState.filter((el, index) => index !== cardIndex);
+    };
     setCardPile((prevState) => [...prevState, card]);
-    console.log(card, playerOneHand);
     !newColor
       ? setPileFirstCard(card)
       : setPileFirstCard({ ...card, color: newColor });
     player === 1
-      ? setPlayerOneHand((prevState) =>
-          prevState.filter((el) => JSON.stringify(el) !== JSON.stringify(card))
-        )
-      : setPlayerTwoHand((prevState) =>
-          prevState.filter((el) => JSON.stringify(el) !== JSON.stringify(card))
-        );
+      ? setPlayerOneHand((prevState) => filterHand(prevState))
+      : setPlayerTwoHand((prevState) => filterHand(prevState));
   };
 
   const cardDrawLogicHandling = (player, numberOfCardsToDraw) => {
@@ -246,7 +264,7 @@ const UnoGame = () => {
 
           if (
             card.type === cardTypes.SPECIAL &&
-            card.number === numbers.DRAW_TWO
+            card.number === cardNumbers.DRAW_TWO
           ) {
             cardDrawLogicHandling(player, 2);
           }
@@ -316,7 +334,7 @@ const UnoGame = () => {
           }
         }
         if (!isTherePlayableCardInHand) return;
-        alert(`player ${player} annouced uno`);
+        console.log(`player ${player} annouced uno`);
         setPlayerOneUnoState(true);
         break;
       case 2:
@@ -328,7 +346,7 @@ const UnoGame = () => {
           }
         }
         if (!isTherePlayableCardInHand) return;
-        alert(`player ${player} annouced uno`);
+        console.log(`player ${player} annouced uno`);
         setPlayerTwoUnoState(true);
         break;
       default:
@@ -339,10 +357,8 @@ const UnoGame = () => {
   //challenge handler
   const challengeAccepted = (player) => {
     if (promptChallengeResult === "declined") {
-      console.log("declined");
       return "declined";
     }
-
     const challengedPlyerHand = player === 1 ? playerOneHand : playerTwoHand;
     let challengeResult = "lost";
     for (let i of challengedPlyerHand) {
@@ -357,94 +373,98 @@ const UnoGame = () => {
 
   return (
     <div>
-      <p>
-        1:{playerOneUnoState.toString()} 2: {playerTwoUnoState.toString()}
-      </p>
-      {failedUnoMessage && <p>{failedUnoMessage}</p>}
-      <p>player 2 hand</p>
-      <button onClick={pileDrawlogicHandling.bind(this, 1)}>DRAW</button>
-      <button onClick={unoButtonLogicHandling.bind(this, 2)}>UNO</button>
-      {!turnCount && (
-        <span
-          style={{
-            color: "red",
-            position: "absolute",
-            fontSize: 40,
-            transform: "translateX(-110px)",
-          }}
-        >
-          Mine
-        </span>
+      {isWinner?.exist ? (
+        <>
+          <WinnerAnnouncer winner={isWinner?.winningPlayer} />
+        </>
+      ) : (
+        <>
+          <p>
+            1:{playerOneUnoState.toString()} 2: {playerTwoUnoState.toString()}
+          </p>
+          {failedUnoMessage && <p>{failedUnoMessage}</p>}
+          <p>player 2 hand</p>
+          <button onClick={pileDrawlogicHandling.bind(this, 1)}>DRAW</button>
+          <button onClick={unoButtonLogicHandling.bind(this, 2)}>UNO</button>
+          {!turnCount && (
+            <span
+              style={{
+                color: "red",
+                position: "absolute",
+                fontSize: 20,
+                transform: "translateX(-110px)",
+              }}
+            >
+              Mine
+            </span>
+          )}
+          {playerTwoHand.map((card) => (
+            <span onClick={playCard.bind(this, card, 2, false)}>
+              <CardImage card={card} />
+            </span>
+          ))}
+          <p>player 1 hand</p>
+          <button onClick={pileDrawlogicHandling.bind(this, 2)}>DRAW</button>
+          <button onClick={unoButtonLogicHandling.bind(this, 1)}>UNO</button>
+          {turnCount && (
+            <span
+              style={{
+                color: "red",
+                position: "absolute",
+                fontSize: 20,
+                transform: "translateX(-110px)",
+              }}
+            >
+              Mine
+            </span>
+          )}
+          {playerOneHand.map((card) => (
+            <span onClick={playCard.bind(this, card, 1, false)}>
+              <CardImage card={card} />
+            </span>
+          ))}
+          <p>pile</p>
+          {cardPile.map((card) => (
+            <CardImage card={card} />
+          ))}
+          <p>deck</p>
+          {deckPile.map((card) => (
+            <CardImage card={card} />
+          ))}
+          <span>player 2 hand size: {playerTwoHand.length}</span>
+          <br />
+          <span>player1 hand size: {playerOneHand.length}</span>
+          <br />
+          <span>cardPile size: {cardPile.length}</span>
+          <br />
+          <span>deckPile size: {deckPile.length}</span>
+          <br />
+          <span>
+            <button onClick={() => setNState((prevState) => !prevState)}>
+              STOP AI
+            </button>
+            <span style={{ fontSize: 120 }}>{nstate.toString()}</span>
+            TOTAL:
+            {deckPile.length +
+              playerTwoHand.length +
+              cardPile.length +
+              playerOneHand.length}
+          </span>
+          <br />
+          <PickColorPrompt
+            isColorPrompt={isColorPrompt}
+            setIsColorPrompt={setIsColorPrompt}
+            setPromptChosenColor={setPromptChosenColor}
+            currentPlayer={turnCount ? 1 : 2}
+          />
+          <ChallengePrompt
+            isChallengePrompt={isChallengePrompt}
+            setIsChallengePrompt={setIsChallengePrompt}
+            setPromptChallengeResult={setPromptChallengeResult}
+            currentPlayer={turnCount ? 2 : 1}
+          />
+        </>
       )}
-      {playerTwoHand.map((card) => (
-        <span onClick={playCard.bind(this, card, 2, false)}>
-          <CardImage card={card} />
-        </span>
-      ))}
-      <p>player 1 hand</p>
-      <button onClick={pileDrawlogicHandling.bind(this, 2)}>DRAW</button>
-      <button onClick={unoButtonLogicHandling.bind(this, 1)}>UNO</button>
-      {turnCount && (
-        <span
-          style={{
-            color: "red",
-            position: "absolute",
-            fontSize: 40,
-            transform: "translateX(-110px)",
-          }}
-        >
-          Mine
-        </span>
-      )}
-      {playerOneHand.map((card) => (
-        <span onClick={playCard.bind(this, card, 1, false)}>
-          <CardImage card={card} />
-        </span>
-      ))}
-      <p>pile</p>
-      {cardPile.map((card) => (
-        <CardImage card={card} />
-      ))}
-      <p>deck</p>
-      {deckPile.map((card) => (
-        <CardImage card={card} />
-      ))}
-      <span>player 2 hand size: {playerTwoHand.length}</span>
-      <br />
-      <span>player1 hand size: {playerOneHand.length}</span>
-      <br />
-      <span>cardPile size: {cardPile.length}</span>
-      <br />
-      <span>deckPile size: {deckPile.length}</span>
-      <br />
-      <span>
-        <button onClick={() => setNState((prevState) => !prevState)}>
-          STOP AI
-        </button>
-        <span style={{ fontSize: 120 }}>{nstate.toString()}</span>
-        <button onClick={() => setNState2((prevState) => !prevState)}>
-          STOP AI
-        </button>
-        <span style={{ fontSize: 120 }}>{nstate2.toString()}</span>
-        TOTAL:
-        {deckPile.length +
-          playerTwoHand.length +
-          cardPile.length +
-          playerOneHand.length}
-      </span>
-      <br />
-      <PickColorPrompt
-        isColorPrompt={isColorPrompt}
-        setIsColorPrompt={setIsColorPrompt}
-        setPromptChosenColor={setPromptChosenColor}
-        currentPlayer={turnCount ? 1 : 2}
-      />
-      <ChallengePrompt
-        isChallengePrompt={isChallengePrompt}
-        setIsChallengePrompt={setIsChallengePrompt}
-        setPromptChallengeResult={setPromptChallengeResult}
-        currentPlayer={turnCount ? 1 : 2}
-      />
     </div>
   );
 };
