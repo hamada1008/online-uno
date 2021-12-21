@@ -8,20 +8,20 @@ import CardImage from "./CardImage.js";
 import PickColorPrompt from "./PickColorPrompt.js";
 import ChallengePrompt from "./ChallengePrompt.js";
 import WinnerAnnouncer from "./WinnerAnnouncer.js";
-import { botAINormal, botAIChallenge } from "../../utils/botAI.ts";
+import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
 
 const UnoGame = () => {
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
   const [playerOneHand, setPlayerOneHand] = useState([]);
   const [playerTwoHand, setPlayerTwoHand] = useState([]);
-  const [cardPile, setCardPile] = useState([]);
-  const [pileFirstCard, setPileFirstCard] = useState();
-  const [deckPile, setDeckPile] = useState([]);
+  const [discardPile, setDiscardPile] = useState([]);
+  const [discardPileFirstCard, setDiscardPileFirstCard] = useState();
+  const [drawPile, setDrawPile] = useState([]);
   const [playerOneUnoState, setPlayerOneUnoState] = useState(false);
   const [playerTwoUnoState, setPlayerTwoUnoState] = useState(false);
-  const [failedUnoMessage, setFailedUnoMessage] = useState("");
   const [turnCount, setTurnCount] = useState(true);
+  const [failedUnoMessage, setFailedUnoMessage] = useState("");
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
   const [nstate, setNState] = useState(true);
@@ -41,22 +41,27 @@ const UnoGame = () => {
     cardType: null,
     player: null,
   });
-
+  //tester
+  useEffect(() => {
+    if (!gameStart) return;
+    console.log("card", discardPileFirstCard);
+  }, [turnCount, discardPileFirstCard]);
+  // Starting the game
   useEffect(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
     setPlayerTwoHand(gameDeck.splice(0, 7));
     while (true) {
       let firstCard = gameDeck[0];
       if (firstCard.type === cardTypes.NORMAL) {
-        setPileFirstCard(gameDeck.slice(0, 1)[0]);
-        setCardPile(gameDeck.splice(0, 1));
+        setDiscardPileFirstCard(gameDeck.slice(0, 1)[0]);
+        setDiscardPile(gameDeck.splice(0, 1));
         break;
       } else {
         gameDeck = arrayShuffle(gameDeck);
         continue;
       }
     }
-    setDeckPile(gameDeck);
+    setDrawPile(gameDeck);
     setGameStart(true);
   }, []);
 
@@ -78,6 +83,7 @@ const UnoGame = () => {
   //Checks if there is a playable card after Drawing one
   useEffect(() => {
     if (!gameStart) return;
+    if (!wasCardDrawnFromDeckPile) return;
     let canPlayCard = false;
     const currentPlayer = turnCount ? 1 : 2;
     const currentPlayerHand = turnCount ? playerOneHand : playerTwoHand;
@@ -87,7 +93,7 @@ const UnoGame = () => {
     }
     if (!canPlayCard) {
       console.log("no card can be played, it is next player turn");
-      setTurnCount((prevState) => !prevState);
+      return setTurnCount((prevState) => !prevState);
     }
   }, [wasCardDrawnFromDeckPile]);
 
@@ -95,16 +101,16 @@ const UnoGame = () => {
 
   const mergeDeckWithPile = useCallback(() => {
     if (!gameStart) return;
-    if (cardPile.length === 1) return;
-    setDeckPile(arrayShuffle(cardPile.slice(0, cardPile.length - 1)));
-    setCardPile([pileFirstCard]);
-  }, [pileFirstCard, gameStart, cardPile]);
+    if (discardPile.length === 1) return;
+    setDrawPile(arrayShuffle(discardPile.slice(0, discardPile.length - 1)));
+    setDiscardPile([discardPileFirstCard]);
+  }, [discardPileFirstCard, gameStart, discardPile]);
 
   //merges deck with pile whenever draw pile becomes empty
   useEffect(() => {
-    if (deckPile.length !== 0) return;
+    if (drawPile.length !== 0) return;
     mergeDeckWithPile();
-  }, [mergeDeckWithPile, deckPile, drawFromPileAfterShuffle]);
+  }, [mergeDeckWithPile, drawPile, drawFromPileAfterShuffle]);
 
   //draws cards after merging piles if the drawn cards should exceed deck size
   useEffect(() => {
@@ -120,62 +126,98 @@ const UnoGame = () => {
     const { cardType, player } = wildCardPlayerData;
     if (!promptChosenColor || !!isColorPrompt || !cardType) return;
     const card = { type: cardType, number: null, color: null };
-    cardPlayingLogicHandling(card, player, promptChosenColor);
     if (cardType === cardTypes.WILD_FOUR) {
       setIsChallengePrompt(true);
     }
     if (cardType === cardTypes.WILD) {
+      cardPlayingLogicHandling(card, player, promptChosenColor);
       setWildCardPlayerData({ player: null, cardType: null });
       setTurnCount((prevState) => !prevState);
     }
-  }, [promptChosenColor, gameStart]);
+  }, [promptChosenColor, isColorPrompt, gameStart]);
 
   //executing challenge logic
 
   useEffect(() => {
     if (!gameStart) return;
     const { player } = wildCardPlayerData;
+    const wilDFourCard = {
+      type: cardTypes.WILD_FOUR,
+      number: null,
+      color: null,
+    };
     if (!promptChallengeResult || !!isChallengePrompt) return;
     switch (challengeAccepted(player)) {
       case "declined":
         cardDrawLogicHandling(player, 4);
+        console.log("challenge declined");
         break;
       case "won":
         cardDrawLogicHandling(player === 1 ? 2 : 1, 6);
+        console.log("challenge won");
         break;
       case "lost":
         cardDrawLogicHandling(player, 6);
+        console.log("challenge lost");
         break;
       default:
         break;
     }
+    cardPlayingLogicHandling(wilDFourCard, player, promptChosenColor);
     setWildCardPlayerData({ player: null, cardType: null });
     setPromptChallengeResult(null);
   }, [promptChallengeResult, gameStart]);
 
-  // player 2 AI
+  // Uno state Resetter
   useEffect(() => {
-    if (!nstate) return;
-    if (turnCount && isChallengePrompt) {
-      botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
-    }
-    if (!turnCount && isChallengePrompt) {
+    if (!gameStart) return;
+    if (playerOneUnoState && playerOneHand.length !== 2) {
+      setPlayerOneUnoState(false);
       return;
     }
+    if (playerTwoUnoState && playerTwoHand.length !== 2) {
+      setPlayerTwoUnoState(false);
+      return;
+    }
+  }, [
+    gameStart,
+    playerOneUnoState,
+    playerTwoUnoState,
+    playerOneHand,
+    playerTwoHand,
+  ]);
+  //resets Draw 1 card whenever a card is played
+  useEffect(() => {
+    if (!gameStart) return;
+    setWasCardDrawnFromDeckPile(false);
+  }, [gameStart, discardPileFirstCard, turnCount]);
+  // player 2 AI no Prompts
+  useEffect(() => {
+    if (!gameStart) return;
+    if (!nstate) return;
     if (turnCount) return;
     if (playerTwoHand.length === 2) {
       unoButtonLogicHandling(2);
     }
-    botAINormal(
-      playCard,
-      isColorPrompt,
-      setIsColorPrompt,
-      setPromptChosenColor,
-      2,
-      playerTwoHand,
-      pileDrawlogicHandling
-    );
-  }, [turnCount, nstate, isChallengePrompt, isColorPrompt, playerTwoHand]);
+    botAINormal(playCard, 2, playerTwoHand, pileDrawlogicHandling);
+  }, [gameStart, turnCount, nstate, playerTwoHand, wasCardDrawnFromDeckPile]);
+  // player 2 AI color Prompt
+  useEffect(() => {
+    if (!gameStart) return;
+    if (!nstate) return;
+    if (turnCount) return;
+    if (!isColorPrompt) return;
+    botAIColor(playerTwoHand, setIsColorPrompt, setPromptChosenColor);
+  }, [isColorPrompt]);
+
+  // player 2 AI challenge Prompt
+  useEffect(() => {
+    if (!gameStart) return;
+    if (!nstate) return;
+    if (!turnCount) return;
+    if (!isChallengePrompt) return;
+    botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
+  }, [isChallengePrompt]);
 
   const cardPlayingLogicHandling = (card, player, newColor) => {
     const filterHand = (prevState) => {
@@ -188,10 +230,10 @@ const UnoGame = () => {
       }
       return prevState.filter((el, index) => index !== cardIndex);
     };
-    setCardPile((prevState) => [...prevState, card]);
+    setDiscardPile((prevState) => [...prevState, card]);
     !newColor
-      ? setPileFirstCard(card)
-      : setPileFirstCard({ ...card, color: newColor });
+      ? setDiscardPileFirstCard(card)
+      : setDiscardPileFirstCard({ ...card, color: newColor });
     player === 1
       ? setPlayerOneHand((prevState) => filterHand(prevState))
       : setPlayerTwoHand((prevState) => filterHand(prevState));
@@ -199,8 +241,8 @@ const UnoGame = () => {
 
   const cardDrawLogicHandling = (player, numberOfCardsToDraw) => {
     let remainingCardsToDraw = 0;
-    if (numberOfCardsToDraw > deckPile.length) {
-      remainingCardsToDraw = numberOfCardsToDraw - deckPile.length;
+    if (numberOfCardsToDraw > drawPile.length) {
+      remainingCardsToDraw = numberOfCardsToDraw - drawPile.length;
       setDrawFromPileAfterShuffle({
         player: player === 1 ? 2 : 1,
         numberOfCards: remainingCardsToDraw,
@@ -212,15 +254,15 @@ const UnoGame = () => {
     if (player === 1) {
       setPlayerTwoHand((prevState) => [
         ...prevState,
-        ...deckPile.slice(0, numberOfCardsToDraw - remainingCardsToDraw),
+        ...drawPile.slice(0, numberOfCardsToDraw - remainingCardsToDraw),
       ]);
     } else if (player === 2) {
       setPlayerOneHand((prevState) => [
         ...prevState,
-        ...deckPile.slice(0, numberOfCardsToDraw - remainingCardsToDraw),
+        ...drawPile.slice(0, numberOfCardsToDraw - remainingCardsToDraw),
       ]);
     }
-    setDeckPile((prevState) =>
+    setDrawPile((prevState) =>
       prevState.filter(
         (el, index) => index > numberOfCardsToDraw - remainingCardsToDraw - 1
       )
@@ -228,8 +270,13 @@ const UnoGame = () => {
   };
 
   const pileDrawlogicHandling = (player) => {
-    setWasCardDrawnFromDeckPile((prevState) => !prevState);
+    console.log("attempted to draw  by opponent of ", player);
     if ((player === 1 && turnCount) || (player === 2 && !turnCount)) return;
+    if (wasCardDrawnFromDeckPile) {
+      console.log("cannot draw more than 1 card per turn, please play a card");
+      return;
+    }
+    setWasCardDrawnFromDeckPile(true);
     cardDrawLogicHandling(player, 1);
   };
 
@@ -240,8 +287,8 @@ const UnoGame = () => {
     switch (card.type) {
       case cardTypes.NORMAL:
         if (
-          card.color === pileFirstCard.color ||
-          card.number === pileFirstCard.number
+          card.color === discardPileFirstCard.color ||
+          card.number === discardPileFirstCard.number
         ) {
           isCardPlayable = true;
           if (test) break;
@@ -251,10 +298,10 @@ const UnoGame = () => {
         break;
       case cardTypes.SPECIAL:
         if (
-          card.color === pileFirstCard.color ||
-          card.number === pileFirstCard.number
+          card.color === discardPileFirstCard.color ||
+          card.number === discardPileFirstCard.number
         ) {
-          if (deckPile.length + cardPile.length < 4) {
+          if (drawPile.length + discardPile.length < 4) {
             console.log("cannot draw from deck unless you play cards in pile");
             return isCardPlayable;
           }
@@ -277,7 +324,7 @@ const UnoGame = () => {
         setWildCardPlayerData({ cardType: cardTypes.WILD, player });
         break;
       case cardTypes.WILD_FOUR:
-        if (deckPile.length + cardPile.length < 6) {
+        if (drawPile.length + discardPile.length < 6) {
           console.log("cannot draw from deck unless you play cards in pile");
           return isCardPlayable;
         }
@@ -315,43 +362,23 @@ const UnoGame = () => {
       setTimeout(() => setFailedUnoMessage(""), 10000);
       cardDrawLogicHandling(1, 2);
     }
-    if (!test) {
-      setPlayerOneUnoState(false);
-      setPlayerTwoUnoState(false);
-    }
     return isCardPlayable;
   };
 
   const unoButtonLogicHandling = (player) => {
+    if ((player === 2 && turnCount) || (player === 1 && !turnCount)) return;
     let isTherePlayableCardInHand = false;
-    switch (player) {
-      case 1:
-        if (playerOneHand.length !== 2) return;
-        for (let i of playerOneHand) {
-          if (playCard(i, 1, true)) {
-            isTherePlayableCardInHand = true;
-            break;
-          }
-        }
-        if (!isTherePlayableCardInHand) return;
-        console.log(`player ${player} annouced uno`);
-        setPlayerOneUnoState(true);
+    const currentPlayerHand = player === 1 ? playerOneHand : playerTwoHand;
+    if (currentPlayerHand.length !== 2) return;
+    for (let i of currentPlayerHand) {
+      if (playCard(i, player, true)) {
+        isTherePlayableCardInHand = true;
         break;
-      case 2:
-        if (playerTwoHand.length !== 2) return;
-        for (let i of playerTwoHand) {
-          if (playCard(i, 2, true)) {
-            isTherePlayableCardInHand = true;
-            break;
-          }
-        }
-        if (!isTherePlayableCardInHand) return;
-        console.log(`player ${player} annouced uno`);
-        setPlayerTwoUnoState(true);
-        break;
-      default:
-        return;
+      }
     }
+    if (!isTherePlayableCardInHand) return;
+    console.log(`player ${player} annouced uno`);
+    player === 1 ? setPlayerOneUnoState(true) : setPlayerTwoUnoState(true);
   };
 
   //challenge handler
@@ -359,10 +386,12 @@ const UnoGame = () => {
     if (promptChallengeResult === "declined") {
       return "declined";
     }
-    const challengedPlyerHand = player === 1 ? playerOneHand : playerTwoHand;
+    const challengedPlayerHand = player === 1 ? playerOneHand : playerTwoHand;
     let challengeResult = "lost";
-    for (let i of challengedPlyerHand) {
-      if (i.type === cardTypes.WILD_FOUR) break;
+    for (let i of challengedPlayerHand) {
+      if (i.type === cardTypes.WILD_FOUR || i.type === cardTypes.WILD) {
+        continue;
+      }
       if (playCard(i, player, true)) {
         challengeResult = "won";
         break;
@@ -424,20 +453,20 @@ const UnoGame = () => {
             </span>
           ))}
           <p>pile</p>
-          {cardPile.map((card) => (
+          {discardPile.map((card) => (
             <CardImage card={card} />
           ))}
           <p>deck</p>
-          {deckPile.map((card) => (
+          {drawPile.map((card) => (
             <CardImage card={card} />
           ))}
           <span>player 2 hand size: {playerTwoHand.length}</span>
           <br />
           <span>player1 hand size: {playerOneHand.length}</span>
           <br />
-          <span>cardPile size: {cardPile.length}</span>
+          <span>cardPile size: {discardPile.length}</span>
           <br />
-          <span>deckPile size: {deckPile.length}</span>
+          <span>deckPile size: {drawPile.length}</span>
           <br />
           <span>
             <button onClick={() => setNState((prevState) => !prevState)}>
@@ -445,9 +474,9 @@ const UnoGame = () => {
             </button>
             <span style={{ fontSize: 120 }}>{nstate.toString()}</span>
             TOTAL:
-            {deckPile.length +
+            {drawPile.length +
               playerTwoHand.length +
-              cardPile.length +
+              discardPile.length +
               playerOneHand.length}
           </span>
           <br />
@@ -461,7 +490,7 @@ const UnoGame = () => {
             isChallengePrompt={isChallengePrompt}
             setIsChallengePrompt={setIsChallengePrompt}
             setPromptChallengeResult={setPromptChallengeResult}
-            currentPlayer={turnCount ? 2 : 1}
+            currentPlayer={turnCount ? 1 : 2}
           />
         </>
       )}
