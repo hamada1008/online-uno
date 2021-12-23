@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import arrayShuffle from "array-shuffle";
 import deck from "../../cards/deck.js";
-import cardColors from "../../cards/colors.ts";
 import cardNumbers from "../../cards/number.ts";
 import cardTypes from "../../cards/types.ts";
 import CardImage from "./CardImage.js";
@@ -41,11 +40,11 @@ const UnoGame = () => {
     cardType: null,
     player: null,
   });
-  //tester
+  // tester;
   useEffect(() => {
     if (!gameStart) return;
-    console.log("card", discardPileFirstCard);
-  }, [turnCount, discardPileFirstCard]);
+    console.log(playerTwoUnoState);
+  }, [playerTwoUnoState, playerTwoHand]);
   // Starting the game
   useEffect(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
@@ -82,8 +81,7 @@ const UnoGame = () => {
 
   //Checks if there is a playable card after Drawing one
   useEffect(() => {
-    if (!gameStart) return;
-    if (!wasCardDrawnFromDeckPile) return;
+    if (!gameStart || !wasCardDrawnFromDeckPile) return;
     let canPlayCard = false;
     const currentPlayer = turnCount ? 1 : 2;
     const currentPlayerHand = turnCount ? playerOneHand : playerTwoHand;
@@ -100,8 +98,7 @@ const UnoGame = () => {
   //detecting Empty deck & suffling with card pile
 
   const mergeDeckWithPile = useCallback(() => {
-    if (!gameStart) return;
-    if (discardPile.length === 1) return;
+    if (!gameStart || discardPile.length === 1) return;
     setDrawPile(arrayShuffle(discardPile.slice(0, discardPile.length - 1)));
     setDiscardPile([discardPileFirstCard]);
   }, [discardPileFirstCard, gameStart, discardPile]);
@@ -193,32 +190,38 @@ const UnoGame = () => {
   }, [gameStart, discardPileFirstCard, turnCount]);
   // player 2 AI no Prompts
   useEffect(() => {
-    if (!gameStart) return;
-    if (!nstate) return;
-    if (turnCount) return;
-    if (playerTwoHand.length === 2) {
-      unoButtonLogicHandling(2);
-    }
+    if (!gameStart || !nstate || turnCount) return;
+    if (!playerTwoUnoState && playerTwoHand.length === 2) return;
     botAINormal(playCard, 2, playerTwoHand, pileDrawlogicHandling);
-  }, [gameStart, turnCount, nstate, playerTwoHand, wasCardDrawnFromDeckPile]);
+  }, [
+    gameStart,
+    turnCount,
+    nstate,
+    playerTwoHand,
+    wasCardDrawnFromDeckPile,
+    playerTwoUnoState,
+  ]);
   // player 2 AI color Prompt
   useEffect(() => {
-    if (!gameStart) return;
-    if (!nstate) return;
-    if (turnCount) return;
-    if (!isColorPrompt) return;
+    if (!gameStart || !nstate || turnCount || !isColorPrompt) return;
     botAIColor(playerTwoHand, setIsColorPrompt, setPromptChosenColor);
   }, [isColorPrompt]);
 
   // player 2 AI challenge Prompt
   useEffect(() => {
-    if (!gameStart) return;
-    if (!nstate) return;
-    if (!turnCount) return;
-    if (!isChallengePrompt) return;
+    if (!gameStart || !nstate || !turnCount || !isChallengePrompt) return;
+
     botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
   }, [isChallengePrompt]);
 
+  //player Two AI uno announcing
+  useEffect(() => {
+    if (!gameStart || playerTwoHand.length !== 2) return;
+    unoButtonLogicHandling(2);
+    console.log(playerTwoUnoState);
+  }, [gameStart, turnCount, playerTwoHand]);
+
+  //Logic when a card is played
   const cardPlayingLogicHandling = (card, player, newColor) => {
     const filterHand = (prevState) => {
       let cardIndex = -1;
@@ -238,6 +241,8 @@ const UnoGame = () => {
       ? setPlayerOneHand((prevState) => filterHand(prevState))
       : setPlayerTwoHand((prevState) => filterHand(prevState));
   };
+
+  //logic for drawing cards from draw pile
 
   const cardDrawLogicHandling = (player, numberOfCardsToDraw) => {
     let remainingCardsToDraw = 0;
@@ -269,8 +274,8 @@ const UnoGame = () => {
     );
   };
 
+  // logic for Draw 1 card
   const pileDrawlogicHandling = (player) => {
-    console.log("attempted to draw  by opponent of ", player);
     if ((player === 1 && turnCount) || (player === 2 && !turnCount)) return;
     if (wasCardDrawnFromDeckPile) {
       console.log("cannot draw more than 1 card per turn, please play a card");
@@ -280,6 +285,7 @@ const UnoGame = () => {
     cardDrawLogicHandling(player, 1);
   };
 
+  //Logic to check if a card is playable or not and/or play the card
   const playCard = (card, player, test) => {
     let isCardPlayable = false;
     if ((player === 2 && turnCount) || (player === 1 && !turnCount))
@@ -364,6 +370,7 @@ const UnoGame = () => {
     }
     return isCardPlayable;
   };
+  // Uno Button logic
 
   const unoButtonLogicHandling = (player) => {
     if ((player === 2 && turnCount) || (player === 1 && !turnCount)) return;
@@ -501,7 +508,6 @@ const UnoGame = () => {
 export default UnoGame;
 
 /*missing features 
-prompts (chose color component, challenge component)
 scoring (rating)
-pass turn button
+
 */

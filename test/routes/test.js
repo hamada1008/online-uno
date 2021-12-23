@@ -12,6 +12,8 @@ describe("Users routes", () => {
   const register = "/api/register";
   const private = "/api";
   const rating = "/api/users";
+  const guest = "/api/guest";
+  const guestLogout = guest + "-logout";
   const preSave = {
     username: "faker",
     email: "faker@email.com",
@@ -29,6 +31,7 @@ describe("Users routes", () => {
   let token;
   let newToken;
   let userId;
+  let guestToken;
   before((done) => {
     chai
       .request(server)
@@ -42,6 +45,18 @@ describe("Users routes", () => {
         } catch (error) {
           console.log(err);
         }
+        done();
+      });
+  });
+  before((done) => {
+    chai
+      .request(server)
+      .get(guest)
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.contain.property("success").to.equal(true);
+        expect(res.body).to.contain.property("msg").to.have.string("ey");
+        guestToken = res.body.msg;
         done();
       });
   });
@@ -389,6 +404,34 @@ describe("Users routes", () => {
           .to.contain.property("msg")
           .to.be.a("string")
           .to.be.equal("Could not update this user's rating");
+        done();
+      });
+  });
+
+  //guest routes
+  it("Should create a new  user guest", (done) => {
+    chai
+      .request(server)
+      .get(guest)
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.contain.property("success").to.equal(true);
+        expect(res.body).to.contain.property("msg").to.have.string("ey");
+        done();
+      });
+  });
+
+  it("Should logout a guest user ", (done) => {
+    chai
+      .request(server)
+      .get(guestLogout)
+      .set("authorization", `Bearer ${guestToken}`)
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.contain.property("success").to.equal(true);
+        expect(res.body)
+          .to.contain.property("msg")
+          .to.equal("Guest user was removed from the database");
         done();
       });
   });

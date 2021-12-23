@@ -28,15 +28,28 @@ const AuthForm = () => {
     }
     try {
       const response = await axios.post(url(requestType), user);
-      response.data.success &&
+      if (response?.data?.success) {
         localStorage.setItem("authToken", response.data.msg);
+        localStorage.setItem("isGuest", "No");
+      }
       e.target.reset();
     } catch (err) {
-      localStorage.removeItem("authToken");
+      localStorage.clear();
       setError(err.response.data.msg);
     }
   };
-
+  const guestRegister = async () => {
+    try {
+      const response = await axios.get(url("guest"));
+      if (response.data.success) {
+        localStorage.setItem("authToken", response.data.msg);
+        localStorage.setItem("isGuest", "Yes");
+      }
+    } catch (err) {
+      localStorage.clear();
+      setError(err.response.data.msg);
+    }
+  };
   return (
     <div>
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -66,6 +79,10 @@ const AuthForm = () => {
       </form>
       <button onClick={() => setRegister((prevState) => !prevState)}>
         {register ? "Have an account? Login here" : "New member? Register here"}
+      </button>
+      <button onClick={guestRegister}>
+        {" "}
+        Want to try out our website? try from here
       </button>
     </div>
   );

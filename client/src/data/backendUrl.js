@@ -7,6 +7,10 @@ const backendUrl = (type, id) => {
       return baseUrl + "register";
     case "rating":
       return baseUrl + "users/" + id + "/rating";
+    case "guest":
+      return baseUrl + "guest";
+    case "guestLogout":
+      return baseUrl + "guest-logout";
     default:
       return baseUrl;
   }
