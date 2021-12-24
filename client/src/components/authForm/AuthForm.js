@@ -35,7 +35,7 @@ const AuthForm = () => {
       e.target.reset();
     } catch (err) {
       localStorage.clear();
-      setError(err.response.data.msg);
+      setError(err.response?.data?.msg);
     }
   };
   const guestRegister = async () => {
@@ -47,7 +47,7 @@ const AuthForm = () => {
       }
     } catch (err) {
       localStorage.clear();
-      setError(err.response.data.msg);
+      setError(err.response?.data?.msg);
     }
   };
   return (

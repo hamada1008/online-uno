@@ -424,7 +424,7 @@ describe("Users routes", () => {
   it("Should logout a guest user ", (done) => {
     chai
       .request(server)
-      .get(guestLogout)
+      .delete(guestLogout)
       .set("authorization", `Bearer ${guestToken}`)
       .end((err, res) => {
         expect(res).to.have.status(200);
