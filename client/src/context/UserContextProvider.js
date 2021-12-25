@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { UserContext } from "./UserContext";
+import { useState, useMemo } from "react";
+import { UserContext } from "./Contexts";
 
 const UserContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);

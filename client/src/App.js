@@ -15,8 +15,8 @@ function App() {
     <>
       {/* <AuthForm /> */}
       <UserContextProvider>
-        <PlayerDashboard />
-        {/* <UnoGame /> */}
+        {/* <PlayerDashboard /> */}
+        <UnoGame />
       </UserContextProvider>
     </>
   );

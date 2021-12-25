@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import arrayShuffle from "array-shuffle";
 import deck from "../../cards/deck.js";
 import cardNumbers from "../../cards/number.ts";
@@ -40,11 +40,12 @@ const UnoGame = () => {
     cardType: null,
     player: null,
   });
+
   // tester;
-  useEffect(() => {
-    if (!gameStart) return;
-    console.log(playerTwoUnoState);
-  }, [playerTwoUnoState, playerTwoHand]);
+  // useEffect(() => {
+  //   if (!gameStart) return;
+  //   console.log(playerTwoUnoState);
+  // }, [playerTwoUnoState, playerTwoHand]);
   // Starting the game
   useEffect(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));

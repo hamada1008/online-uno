@@ -8,7 +8,7 @@ import React, {
 import "./PlayerDashboard.scss";
 import NavBar from "../navbar/NavBar";
 import WaitingRoom from "../waitingRoom/WaitingRoom";
-import { UserContext } from "../../context/UserContext";
+import { UserContext } from "../../context/Contexts";
 import axios from "axios";
 import io from "socket.io-client";
 import url from "../../data/backendUrl";
@@ -21,6 +21,8 @@ const PlayerDashboard = () => {
   const [rating, setRating] = useState(lastRating.current);
   const [roomType, setRoomType] = useState("Create");
   const [roomId, setRoomId] = useState("");
+  const [roomError, setRoomError] = useState("");
+  const [roomReady, setRoomReady] = useState("");
   const token = localStorage.getItem("authToken");
   const authorizeToken = useCallback(async () => {
     if (!token) return;
@@ -61,13 +63,13 @@ const PlayerDashboard = () => {
       socket.off();
     };
   }, []);
-
+  //error Reset
   useEffect(() => {
-    //sockets
-    socket.on("dotest", (message) => {
-      setRoomId(message);
-    });
-  }, []);
+    if (roomError === "") return;
+    setTimeout(() => {
+      setRoomError("");
+    }, 1000);
+  }, [roomType, roomId]);
   //Room creator
   const roomCreationHandler = (e) => {
     e.preventDefault();
@@ -79,6 +81,16 @@ const PlayerDashboard = () => {
       //push waiting room route
     }
   };
+  useEffect(() => {
+    //sockets
+    socket.on("room-error", (error) => {
+      setRoomError(error.errorMessage);
+    });
+    socket.on("room-ready", (message) => {
+      setRoomReady(message);
+      //push history
+    });
+  }, []);
 
   //Creates / joins a room after setting a room id
   useEffect(() => {
@@ -98,7 +110,7 @@ const PlayerDashboard = () => {
       <button onClick={() => setRoomType("Join")}>Join a room</button>
       <br />
       <br />
-      <form onSubmit={roomCreationHandler} autocomplete="off">
+      <form onSubmit={roomCreationHandler} autoComplete="off">
         <label htmlFor="room">{roomType} a room</label>
         <input
           placeholder="Enter the room ID"
@@ -111,6 +123,12 @@ const PlayerDashboard = () => {
       <br />
       <br />
       {roomType === "Create" ? <WaitingRoom roomId={roomId} /> : null}
+      <br />
+      <br />
+      {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
+      <br />
+      <br />
+      {roomReady ? <h1 style={{ color: "green" }}>{roomReady}</h1> : null}
     </div>
   );
 };
