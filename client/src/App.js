@@ -16,7 +16,7 @@ function App() {
       {/* <AuthForm /> */}
       <UserContextProvider>
         {/* <PlayerDashboard /> */}
-        <UnoGame />
+        <UnoGame gameType="single" />
       </UserContextProvider>
     </>
   );

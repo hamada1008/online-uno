@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import arrayShuffle from "array-shuffle";
 import deck from "../../cards/deck.js";
 import cardNumbers from "../../cards/number.ts";
@@ -9,7 +9,7 @@ import ChallengePrompt from "./ChallengePrompt.js";
 import WinnerAnnouncer from "./WinnerAnnouncer.js";
 import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
 
-const UnoGame = () => {
+const UnoGame = ({ gameType }) => {
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
   const [playerOneHand, setPlayerOneHand] = useState([]);
@@ -23,11 +23,12 @@ const UnoGame = () => {
   const [failedUnoMessage, setFailedUnoMessage] = useState("");
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
-  const [nstate, setNState] = useState(true);
+  const [solo, setSolo] = useState(true);
   const [isColorPrompt, setIsColorPrompt] = useState(false);
   const [isChallengePrompt, setIsChallengePrompt] = useState(false);
   const [promptChosenColor, setPromptChosenColor] = useState(null);
   const [promptChallengeResult, setPromptChallengeResult] = useState(null);
+  const [isAI, setIsAI] = useState(false);
   const [drawFromPileAfterShuffle, setDrawFromPileAfterShuffle] = useState({
     player: null,
     numberOfCards: 0,
@@ -42,10 +43,10 @@ const UnoGame = () => {
   });
 
   // tester;
-  // useEffect(() => {
-  //   if (!gameStart) return;
-  //   console.log(playerTwoUnoState);
-  // }, [playerTwoUnoState, playerTwoHand]);
+  useEffect(() => {
+    if (!gameStart) return;
+    console.log("turn changed");
+  }, [turnCount]);
   // Starting the game
   useEffect(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
@@ -128,11 +129,12 @@ const UnoGame = () => {
       setIsChallengePrompt(true);
     }
     if (cardType === cardTypes.WILD) {
+      console.log("changed from" + turnCount.toString());
       cardPlayingLogicHandling(card, player, promptChosenColor);
       setWildCardPlayerData({ player: null, cardType: null });
       setTurnCount((prevState) => !prevState);
     }
-  }, [promptChosenColor, isColorPrompt, gameStart]);
+  }, [wildCardPlayerData, promptChosenColor, isColorPrompt, gameStart]);
 
   //executing challenge logic
 
@@ -189,38 +191,6 @@ const UnoGame = () => {
     if (!gameStart) return;
     setWasCardDrawnFromDeckPile(false);
   }, [gameStart, discardPileFirstCard, turnCount]);
-  // player 2 AI no Prompts
-  useEffect(() => {
-    if (!gameStart || !nstate || turnCount) return;
-    if (!playerTwoUnoState && playerTwoHand.length === 2) return;
-    botAINormal(playCard, 2, playerTwoHand, pileDrawlogicHandling);
-  }, [
-    gameStart,
-    turnCount,
-    nstate,
-    playerTwoHand,
-    wasCardDrawnFromDeckPile,
-    playerTwoUnoState,
-  ]);
-  // player 2 AI color Prompt
-  useEffect(() => {
-    if (!gameStart || !nstate || turnCount || !isColorPrompt) return;
-    botAIColor(playerTwoHand, setIsColorPrompt, setPromptChosenColor);
-  }, [isColorPrompt]);
-
-  // player 2 AI challenge Prompt
-  useEffect(() => {
-    if (!gameStart || !nstate || !turnCount || !isChallengePrompt) return;
-
-    botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
-  }, [isChallengePrompt]);
-
-  //player Two AI uno announcing
-  useEffect(() => {
-    if (!gameStart || playerTwoHand.length !== 2) return;
-    unoButtonLogicHandling(2);
-    console.log(playerTwoUnoState);
-  }, [gameStart, turnCount, playerTwoHand]);
 
   //Logic when a card is played
   const cardPlayingLogicHandling = (card, player, newColor) => {
@@ -369,6 +339,7 @@ const UnoGame = () => {
       setTimeout(() => setFailedUnoMessage(""), 10000);
       cardDrawLogicHandling(1, 2);
     }
+
     return isCardPlayable;
   };
   // Uno Button logic
@@ -407,6 +378,49 @@ const UnoGame = () => {
     }
     return challengeResult;
   };
+
+  // player 2 AI no Prompts
+  useEffect(() => {
+    if (!isAI) return;
+    if (!gameStart || !solo) return;
+    if (turnCount) return;
+    if (playerTwoHand.length === 2 && !playerTwoUnoState)
+      return pileDrawlogicHandling(1);
+    botAINormal(playCard, 2, playerTwoHand, pileDrawlogicHandling);
+  }, [
+    gameStart,
+    turnCount,
+    solo,
+    playerTwoUnoState,
+    playerTwoHand,
+    wasCardDrawnFromDeckPile,
+    isAI,
+  ]);
+  // player 2 AI color Prompt
+  useEffect(() => {
+    if (!isAI) return;
+    if (!gameStart || !solo || !isColorPrompt) return;
+    if (turnCount) return setIsColorPrompt(false);
+    botAIColor(playerTwoHand, setIsColorPrompt, setPromptChosenColor);
+  });
+
+  // player 2 AI challenge Prompt
+  useEffect(() => {
+    if (!turnCount) return;
+    if (!gameStart || !solo || !isChallengePrompt) return;
+    botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
+  });
+
+  // AI switcher
+  useEffect(() => {
+    if (turnCount) return setIsAI(false);
+    if (!turnCount) return setIsAI(true);
+  }, [turnCount]);
+  //player Two AI uno announcing
+  useEffect(() => {
+    if (!gameStart || playerTwoHand.length !== 2 || playerTwoUnoState) return;
+    unoButtonLogicHandling(2);
+  });
 
   return (
     <div>
@@ -477,10 +491,10 @@ const UnoGame = () => {
           <span>deckPile size: {drawPile.length}</span>
           <br />
           <span>
-            <button onClick={() => setNState((prevState) => !prevState)}>
+            <button onClick={() => setSolo((prevState) => !prevState)}>
               STOP AI
             </button>
-            <span style={{ fontSize: 120 }}>{nstate.toString()}</span>
+            <span style={{ fontSize: 120 }}>{solo.toString()}</span>
             TOTAL:
             {drawPile.length +
               playerTwoHand.length +
