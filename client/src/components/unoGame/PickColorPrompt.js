@@ -6,10 +6,10 @@ const PickColorPrompt = ({
   isColorPrompt,
   setIsColorPrompt,
   setPromptChosenColor,
-  currentPlayer,
+  thisTurnPlayer,
+  currentPlayerNumber,
 }) => {
   const wildColorChangingHandler = (e) => {
-    if (currentPlayer !== 1) return;
     setPromptChosenColor(e.target.id);
     setIsColorPrompt(false);
   };
@@ -26,6 +26,7 @@ const PickColorPrompt = ({
             className="pick-a-color"
             id={cardColors.RED}
             style={{ backgroundColor: cardColors.RED }}
+            disabled={thisTurnPlayer !== currentPlayerNumber}
           >
             RED
           </button>
@@ -34,6 +35,7 @@ const PickColorPrompt = ({
             className="pick-a-color"
             id={cardColors.YELLOW}
             style={{ backgroundColor: cardColors.YELLOW }}
+            disabled={thisTurnPlayer !== currentPlayerNumber}
           >
             YELLOW
           </button>
@@ -42,6 +44,7 @@ const PickColorPrompt = ({
             className="pick-a-color"
             id={cardColors.BLUE}
             style={{ backgroundColor: cardColors.BLUE }}
+            disabled={thisTurnPlayer !== currentPlayerNumber}
           >
             BLUE
           </button>
@@ -50,6 +53,7 @@ const PickColorPrompt = ({
             className="pick-a-color"
             id={cardColors.GREEN}
             style={{ backgroundColor: cardColors.GREEN }}
+            disabled={thisTurnPlayer !== currentPlayerNumber}
           >
             GREEN
           </button>

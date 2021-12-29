@@ -34,8 +34,25 @@ module.exports = function (app) {
     });
 
     //temp easy join
-    socket.on("easy", () => {
+    socket.on("easy-join", () => {
+      const roomSize = io._nsps.get("/game").adapter.rooms.get("test")?.size;
       socket.join("test");
+      const playerNumber = !roomSize ? 1 : 2;
+      socket.emit("easy-player", playerNumber);
+    });
+
+    //GAME SOCKETS
+
+    //game initialization
+    socket.on("game-init", (room, gameState) => {
+      socket.broadcast.to(room).emit("game-init-p2", gameState);
+    });
+    socket.on("get-game-init", (room) => {
+      game.to(room).emit("send-game-init");
+    });
+
+    socket.on("game-update", (room, gameState) => {
+      socket.broadcast.to(room).emit("game-update", gameState);
     });
   });
   return io;

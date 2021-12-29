@@ -4,10 +4,10 @@ const ChallengePrompt = ({
   isChallengePrompt,
   setIsChallengePrompt,
   setPromptChallengeResult,
-  currentPlayer,
+  thisTurnPlayer,
+  currentPlayerNumber,
 }) => {
   const challengeResultHandler = (e) => {
-    if (currentPlayer !== 2) return;
     setPromptChallengeResult(e.target.id);
     setIsChallengePrompt(false);
   };
@@ -18,10 +18,18 @@ const ChallengePrompt = ({
           <Modal.Title>Pick a Color</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <button onClick={challengeResultHandler} id="accepted">
+          <button
+            onClick={challengeResultHandler}
+            id="accepted"
+            disabled={thisTurnPlayer === currentPlayerNumber}
+          >
             Accept
           </button>
-          <button onClick={challengeResultHandler} id="declined">
+          <button
+            onClick={challengeResultHandler}
+            id="declined"
+            disabled={thisTurnPlayer === currentPlayerNumber}
+          >
             Decline
           </button>
         </Modal.Body>

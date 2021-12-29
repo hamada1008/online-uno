@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import arrayShuffle from "array-shuffle";
 import deck from "../../cards/deck.js";
 import cardNumbers from "../../cards/number.ts";
@@ -9,7 +9,7 @@ import ChallengePrompt from "./ChallengePrompt.js";
 import WinnerAnnouncer from "./WinnerAnnouncer.js";
 import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
 
-const UnoGame = ({ gameType }) => {
+const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
   const [playerOneHand, setPlayerOneHand] = useState([]);
@@ -23,12 +23,13 @@ const UnoGame = ({ gameType }) => {
   const [failedUnoMessage, setFailedUnoMessage] = useState("");
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
-  const [solo, setSolo] = useState(true);
+  const [solo, setSolo] = useState(gameType === "multiplayer" ? false : true);
   const [isColorPrompt, setIsColorPrompt] = useState(false);
   const [isChallengePrompt, setIsChallengePrompt] = useState(false);
   const [promptChosenColor, setPromptChosenColor] = useState(null);
   const [promptChallengeResult, setPromptChallengeResult] = useState(null);
   const [isAI, setIsAI] = useState(false);
+  const [didMultiplayerStart, setdidMultiplayerStart] = useState(false);
   const [drawFromPileAfterShuffle, setDrawFromPileAfterShuffle] = useState({
     player: null,
     numberOfCards: 0,
@@ -41,14 +42,16 @@ const UnoGame = ({ gameType }) => {
     cardType: null,
     player: null,
   });
-
   // tester;
-  useEffect(() => {
-    if (!gameStart) return;
-    console.log("turn changed");
-  }, [turnCount]);
+  // useEffect(() => {
+  //   console.log(playerTwoHand);
+  //   console.log(playerOneHand);
+  // }, [playerTwoHand, playerOneHand]);
   // Starting the game
-  useEffect(() => {
+
+  //auto Joining a room
+
+  const gameStarter = useCallback(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
     setPlayerTwoHand(gameDeck.splice(0, 7));
     while (true) {
@@ -64,11 +67,108 @@ const UnoGame = ({ gameType }) => {
     }
     setDrawPile(gameDeck);
     setGameStart(true);
+    setdidMultiplayerStart(true);
   }, []);
 
-  //detecting winner
+  //ALL socket events
+  useEffect(() => {
+    if (currentPlayerNumber === 1) return;
+    socket.emit("get-game-init", room);
+    socket.on(
+      "game-init-p2",
+      ({
+        gameStart,
+        playerOneHand,
+        playerTwoHand,
+        discardPile,
+        discardPileFirstCard,
+        drawPile,
+      }) => {
+        setPlayerOneHand(playerOneHand);
+        setPlayerTwoHand(playerTwoHand);
+        setDiscardPile(discardPile);
+        setDiscardPileFirstCard(discardPileFirstCard);
+        setDrawPile(drawPile);
+        setGameStart(gameStart);
+        setdidMultiplayerStart(true);
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (currentPlayerNumber === 2) return;
+    gameStarter();
+  }, []);
+
   useEffect(() => {
     if (!gameStart) return;
+    socket.on("send-game-init", () => {
+      socket.emit("game-init", room, {
+        gameStart,
+        playerOneHand,
+        playerTwoHand,
+        discardPile,
+        discardPileFirstCard,
+        drawPile,
+      });
+    });
+  }, [gameStart]);
+  useEffect(() => {
+    socket.on(
+      "game-update",
+      ({
+        playerOneHand,
+        playerTwoHand,
+        discardPile,
+        discardPileFirstCard,
+        drawPile,
+        turnCount,
+      }) => {
+        playerOneHand && setPlayerOneHand(playerOneHand);
+        playerTwoHand && setPlayerTwoHand(playerTwoHand);
+        discardPile && setDiscardPile(discardPile);
+        discardPileFirstCard && setDiscardPileFirstCard(discardPileFirstCard);
+        drawPile && setDrawPile(drawPile);
+        typeof turnCount === "boolean" && setTurnCount(turnCount);
+      }
+    );
+  }, []);
+  // using Use memo will prevent the useEffect from rerendering
+  // const playerOneHandMemo = useMemo(() => playerOneHand, [playerOneHand]);
+  // const playerTwoHandMemo = useMemo(() => playerTwoHand, [playerTwoHand]);
+  useEffect(() => {
+    if (!gameStart) return;
+    if (currentPlayerNumber === 2 || !turnCount) return;
+    socket.emit("game-update", room, {
+      playerOneHand,
+      playerTwoHand,
+      discardPile,
+      discardPileFirstCard,
+      drawPile,
+    });
+  }, [playerOneHand.length]);
+  useEffect(() => {
+    if (!gameStart) return;
+    if (currentPlayerNumber === 1 || turnCount) return;
+    socket.emit("game-update", room, {
+      playerOneHand,
+      playerTwoHand,
+      discardPile,
+      discardPileFirstCard,
+      drawPile,
+    });
+  }, [playerTwoHand.length]);
+  useEffect(() => {
+    if (!gameStart) return;
+    socket.emit("game-update", room, {
+      turnCount,
+    });
+  }, [turnCount]);
+
+  //end of socket events
+  //detecting winner
+  useEffect(() => {
+    if (!gameStart || !didMultiplayerStart) return;
     switch (true) {
       case playerOneHand.length === 0:
         setIsWinner({ exist: true, winningPlayer: 1 });
@@ -430,13 +530,24 @@ const UnoGame = ({ gameType }) => {
         </>
       ) : (
         <>
+          <h1>{currentPlayerNumber}</h1>
           <p>
             1:{playerOneUnoState.toString()} 2: {playerTwoUnoState.toString()}
           </p>
           {failedUnoMessage && <p>{failedUnoMessage}</p>}
           <p>player 2 hand</p>
-          <button onClick={pileDrawlogicHandling.bind(this, 1)}>DRAW</button>
-          <button onClick={unoButtonLogicHandling.bind(this, 2)}>UNO</button>
+          <button
+            onClick={pileDrawlogicHandling.bind(this, 1)}
+            disabled={currentPlayerNumber === 1}
+          >
+            DRAW
+          </button>
+          <button
+            onClick={unoButtonLogicHandling.bind(this, 2)}
+            disabled={currentPlayerNumber === 1}
+          >
+            UNO
+          </button>
           {!turnCount && (
             <span
               style={{
@@ -450,13 +561,29 @@ const UnoGame = ({ gameType }) => {
             </span>
           )}
           {playerTwoHand.map((card) => (
-            <span onClick={playCard.bind(this, card, 2, false)}>
+            <span
+              onClick={
+                currentPlayerNumber === 2
+                  ? playCard.bind(this, card, 2, false)
+                  : null
+              }
+            >
               <CardImage card={card} />
             </span>
           ))}
           <p>player 1 hand</p>
-          <button onClick={pileDrawlogicHandling.bind(this, 2)}>DRAW</button>
-          <button onClick={unoButtonLogicHandling.bind(this, 1)}>UNO</button>
+          <button
+            onClick={pileDrawlogicHandling.bind(this, 2)}
+            disabled={currentPlayerNumber === 2}
+          >
+            DRAW
+          </button>
+          <button
+            onClick={unoButtonLogicHandling.bind(this, 1)}
+            disabled={currentPlayerNumber === 2}
+          >
+            UNO
+          </button>
           {turnCount && (
             <span
               style={{
@@ -470,7 +597,13 @@ const UnoGame = ({ gameType }) => {
             </span>
           )}
           {playerOneHand.map((card) => (
-            <span onClick={playCard.bind(this, card, 1, false)}>
+            <span
+              onClick={
+                currentPlayerNumber === 1
+                  ? playCard.bind(this, card, 1, false)
+                  : null
+              }
+            >
               <CardImage card={card} />
             </span>
           ))}
@@ -506,13 +639,15 @@ const UnoGame = ({ gameType }) => {
             isColorPrompt={isColorPrompt}
             setIsColorPrompt={setIsColorPrompt}
             setPromptChosenColor={setPromptChosenColor}
-            currentPlayer={turnCount ? 1 : 2}
+            thisTurnPlayer={turnCount ? 1 : 2}
+            currentPlayerNumber={currentPlayerNumber}
           />
           <ChallengePrompt
             isChallengePrompt={isChallengePrompt}
             setIsChallengePrompt={setIsChallengePrompt}
             setPromptChallengeResult={setPromptChallengeResult}
-            currentPlayer={turnCount ? 1 : 2}
+            thisTurnPlayer={turnCount ? 1 : 2}
+            currentPlayerNumber={currentPlayerNumber}
           />
         </>
       )}
@@ -524,5 +659,7 @@ export default UnoGame;
 
 /*missing features 
 scoring (rating)
-
 */
+
+// to do
+/* Fix Prompts & add +4 challenge prompt */
