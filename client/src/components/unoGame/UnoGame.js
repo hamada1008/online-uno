@@ -8,6 +8,7 @@ import PickColorPrompt from "./PickColorPrompt.js";
 import ChallengePrompt from "./ChallengePrompt.js";
 import WinnerAnnouncer from "./WinnerAnnouncer.js";
 import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
+import { playerScoring } from "../../utils/playerScoring.ts";
 
 const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   let gameDeck = deck.map((el) => el);
@@ -26,7 +27,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   const [solo, setSolo] = useState(gameType === "multiplayer" ? false : true);
   const [isColorPrompt, setIsColorPrompt] = useState(false);
   const [isChallengePrompt, setIsChallengePrompt] = useState(false);
-  const [promptChosenColor, setPromptChosenColor] = useState(null);
+  const [promptChosenColor, setPromptChosenColor] = useState("none");
   const [promptChallengeResult, setPromptChallengeResult] = useState(null);
   const [isAI, setIsAI] = useState(false);
   const [didMultiplayerStart, setdidMultiplayerStart] = useState(false);
@@ -42,18 +43,31 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     cardType: null,
     player: null,
   });
+  const [playerOneScore, setPlayerOneScore] = useState(0);
+  const [playerTwoScore, setPlayerTwoScore] = useState(0);
+  const discardPileFirstCardMemo = useMemo(
+    () => discardPileFirstCard,
+    [
+      discardPileFirstCard?.type,
+      discardPileFirstCard?.number,
+      discardPileFirstCard?.color,
+    ]
+  );
+  const wildCardPlayerDataMemo = useMemo(
+    () => wildCardPlayerData,
+    [wildCardPlayerData?.cardType, wildCardPlayerData?.player]
+  );
   // tester;
   // useEffect(() => {
-  //   console.log(playerTwoHand);
-  //   console.log(playerOneHand);
-  // }, [playerTwoHand, playerOneHand]);
+  //   console.log(promptChallengeResult);
+  // }, [promptChallengeResult]);
   // Starting the game
 
   //auto Joining a room
 
   const gameStarter = useCallback(() => {
-    setPlayerOneHand(gameDeck.splice(0, 7));
-    setPlayerTwoHand(gameDeck.splice(0, 7));
+    setPlayerOneHand(gameDeck.splice(0, 2));
+    setPlayerTwoHand(gameDeck.splice(0, 2));
     while (true) {
       let firstCard = gameDeck[0];
       if (firstCard.type === cardTypes.NORMAL) {
@@ -73,26 +87,27 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   //ALL socket events
   useEffect(() => {
     if (currentPlayerNumber === 1) return;
-    socket.emit("get-game-init", room);
-    socket.on(
-      "game-init-p2",
-      ({
-        gameStart,
-        playerOneHand,
-        playerTwoHand,
-        discardPile,
-        discardPileFirstCard,
-        drawPile,
-      }) => {
-        setPlayerOneHand(playerOneHand);
-        setPlayerTwoHand(playerTwoHand);
-        setDiscardPile(discardPile);
-        setDiscardPileFirstCard(discardPileFirstCard);
-        setDrawPile(drawPile);
-        setGameStart(gameStart);
-        setdidMultiplayerStart(true);
-      }
-    );
+    socket && socket.emit("get-game-init", room);
+    socket &&
+      socket.on(
+        "game-init-p2",
+        ({
+          gameStart,
+          playerOneHand,
+          playerTwoHand,
+          discardPile,
+          discardPileFirstCard,
+          drawPile,
+        }) => {
+          setPlayerOneHand(playerOneHand);
+          setPlayerTwoHand(playerTwoHand);
+          setDiscardPile(discardPile);
+          setDiscardPileFirstCard(discardPileFirstCard);
+          setDrawPile(drawPile);
+          setGameStart(gameStart);
+          setdidMultiplayerStart(true);
+        }
+      );
   }, []);
 
   useEffect(() => {
@@ -102,68 +117,139 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
 
   useEffect(() => {
     if (!gameStart) return;
-    socket.on("send-game-init", () => {
-      socket.emit("game-init", room, {
-        gameStart,
-        playerOneHand,
-        playerTwoHand,
-        discardPile,
-        discardPileFirstCard,
-        drawPile,
+    socket &&
+      socket.on("send-game-init", () => {
+        socket &&
+          socket.emit("game-init", room, {
+            gameStart,
+            playerOneHand,
+            playerTwoHand,
+            discardPile,
+            discardPileFirstCard,
+            drawPile,
+          });
       });
-    });
   }, [gameStart]);
   useEffect(() => {
-    socket.on(
-      "game-update",
-      ({
-        playerOneHand,
-        playerTwoHand,
-        discardPile,
-        discardPileFirstCard,
-        drawPile,
-        turnCount,
-      }) => {
-        playerOneHand && setPlayerOneHand(playerOneHand);
-        playerTwoHand && setPlayerTwoHand(playerTwoHand);
-        discardPile && setDiscardPile(discardPile);
-        discardPileFirstCard && setDiscardPileFirstCard(discardPileFirstCard);
-        drawPile && setDrawPile(drawPile);
-        typeof turnCount === "boolean" && setTurnCount(turnCount);
-      }
-    );
+    socket &&
+      socket.on(
+        "game-update",
+        ({
+          playerOneHand,
+          playerTwoHand,
+          discardPile,
+          discardPileFirstCard,
+          drawPile,
+          turnCount,
+          isChallengePrompt,
+          promptChallengeResult,
+          wildCardPlayerData,
+          promptChosenColor,
+        }) => {
+          playerOneHand &&
+            setPlayerOneHand((prevState) => {
+              if (prevState.length !== playerOneHand) return playerOneHand;
+            });
+          playerTwoHand &&
+            setPlayerTwoHand((prevState) => {
+              if (prevState.length !== playerTwoHand) return playerTwoHand;
+            });
+          discardPile &&
+            setDiscardPile((prevState) => {
+              if (prevState.length !== discardPile) return discardPile;
+            });
+          discardPileFirstCard && setDiscardPileFirstCard(discardPileFirstCard);
+          drawPile &&
+            setDrawPile((prevState) => {
+              if (prevState.length !== drawPile) return drawPile;
+            });
+          typeof turnCount === "boolean" && setTurnCount(turnCount);
+          typeof isChallengePrompt === "boolean" &&
+            setIsChallengePrompt(isChallengePrompt);
+          promptChallengeResult &&
+            setPromptChallengeResult(promptChallengeResult);
+          wildCardPlayerData && setWildCardPlayerData(wildCardPlayerData);
+          promptChosenColor !== undefined &&
+            setPromptChosenColor(promptChosenColor);
+        }
+      );
   }, []);
-  // using Use memo will prevent the useEffect from rerendering
-  // const playerOneHandMemo = useMemo(() => playerOneHand, [playerOneHand]);
-  // const playerTwoHandMemo = useMemo(() => playerTwoHand, [playerTwoHand]);
   useEffect(() => {
     if (!gameStart) return;
-    if (currentPlayerNumber === 2 || !turnCount) return;
-    socket.emit("game-update", room, {
-      playerOneHand,
-      playerTwoHand,
-      discardPile,
-      discardPileFirstCard,
-      drawPile,
-    });
+    socket &&
+      socket.emit("game-update", room, {
+        playerOneHand,
+      });
   }, [playerOneHand.length]);
   useEffect(() => {
     if (!gameStart) return;
-    if (currentPlayerNumber === 1 || turnCount) return;
-    socket.emit("game-update", room, {
-      playerOneHand,
-      playerTwoHand,
-      discardPile,
-      discardPileFirstCard,
-      drawPile,
-    });
+    socket &&
+      socket.emit("game-update", room, {
+        playerTwoHand,
+      });
   }, [playerTwoHand.length]);
   useEffect(() => {
     if (!gameStart) return;
-    socket.emit("game-update", room, {
-      turnCount,
-    });
+    socket &&
+      socket.emit("game-update", room, {
+        discardPile,
+      });
+  }, [discardPile.length]);
+  useEffect(() => {
+    if (!gameStart) return;
+    socket &&
+      socket.emit("game-update", room, {
+        discardPileFirstCard: discardPileFirstCardMemo,
+      });
+  }, [discardPileFirstCardMemo]);
+  useEffect(() => {
+    if (!gameStart) return;
+    socket &&
+      socket.emit("game-update", room, {
+        drawPile,
+      });
+  }, [drawPile.length]);
+  useEffect(() => {
+    if (!gameStart) return;
+    socket && socket.emit("game-update", room, { turnCount });
   }, [turnCount]);
+  useEffect(() => {
+    if (!gameStart) return;
+    socket &&
+      socket.emit("game-update", room, {
+        isChallengePrompt,
+      });
+  }, [isChallengePrompt]);
+  useEffect(() => {
+    if (!gameStart) return;
+    if (
+      (turnCount && currentPlayerNumber === 1) ||
+      (!turnCount && currentPlayerNumber === 2)
+    )
+      return;
+    socket &&
+      socket.emit("game-update", room, {
+        promptChallengeResult,
+      });
+  }, [promptChallengeResult]);
+  useEffect(() => {
+    if (!gameStart) return;
+    socket &&
+      socket.emit("game-update", room, {
+        wildCardPlayerData: wildCardPlayerDataMemo,
+      });
+  }, [wildCardPlayerDataMemo]);
+  useEffect(() => {
+    if (!gameStart) return;
+    if (
+      (turnCount && currentPlayerNumber === 1) ||
+      (!turnCount && currentPlayerNumber === 2)
+    )
+      socket &&
+        socket.emit("game-update", room, {
+          promptChosenColor,
+        });
+  }, [promptChosenColor]);
 
   //end of socket events
   //detecting winner
@@ -171,10 +257,20 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     if (!gameStart || !didMultiplayerStart) return;
     switch (true) {
       case playerOneHand.length === 0:
-        setIsWinner({ exist: true, winningPlayer: 1 });
+        setIsWinner({
+          exist: true,
+          winningPlayer: 1,
+          playerOneScore,
+          playerTwoScore,
+        });
         return;
       case playerTwoHand.length === 0:
-        setIsWinner({ exist: true, winningPlayer: 2 });
+        setIsWinner({
+          exist: true,
+          winningPlayer: 2,
+          playerOneScore,
+          playerTwoScore,
+        });
         return;
       default:
         return;
@@ -208,6 +304,12 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   //merges deck with pile whenever draw pile becomes empty
   useEffect(() => {
     if (drawPile.length !== 0) return;
+    if (
+      !solo &&
+      ((turnCount && currentPlayerNumber === 1) ||
+        (!turnCount && currentPlayerNumber === 2))
+    )
+      return;
     mergeDeckWithPile();
   }, [mergeDeckWithPile, drawPile, drawFromPileAfterShuffle]);
 
@@ -223,15 +325,15 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   useEffect(() => {
     if (!gameStart) return;
     const { cardType, player } = wildCardPlayerData;
-    if (!promptChosenColor || !!isColorPrompt || !cardType) return;
+    if (promptChosenColor === "none" || !!isColorPrompt || !cardType) return;
     const card = { type: cardType, number: null, color: null };
     if (cardType === cardTypes.WILD_FOUR) {
       setIsChallengePrompt(true);
     }
     if (cardType === cardTypes.WILD) {
-      console.log("changed from" + turnCount.toString());
       cardPlayingLogicHandling(card, player, promptChosenColor);
       setWildCardPlayerData({ player: null, cardType: null });
+      setPromptChosenColor("none");
       setTurnCount((prevState) => !prevState);
     }
   }, [wildCardPlayerData, promptChosenColor, isColorPrompt, gameStart]);
@@ -246,19 +348,17 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
       number: null,
       color: null,
     };
+    if (!solo && (!player || player === currentPlayerNumber)) return;
     if (!promptChallengeResult || !!isChallengePrompt) return;
     switch (challengeAccepted(player)) {
       case "declined":
         cardDrawLogicHandling(player, 4);
-        console.log("challenge declined");
         break;
       case "won":
         cardDrawLogicHandling(player === 1 ? 2 : 1, 6);
-        console.log("challenge won");
         break;
       case "lost":
         cardDrawLogicHandling(player, 6);
-        console.log("challenge lost");
         break;
       default:
         break;
@@ -266,7 +366,8 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     cardPlayingLogicHandling(wilDFourCard, player, promptChosenColor);
     setWildCardPlayerData({ player: null, cardType: null });
     setPromptChallengeResult(null);
-  }, [promptChallengeResult, gameStart]);
+    setPromptChosenColor("none");
+  }, [promptChallengeResult]);
 
   // Uno state Resetter
   useEffect(() => {
@@ -291,6 +392,19 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     if (!gameStart) return;
     setWasCardDrawnFromDeckPile(false);
   }, [gameStart, discardPileFirstCard, turnCount]);
+
+  // Scoring system
+  useEffect(() => {
+    if (!gameStart) return;
+    if (discardPile.length === 1) return;
+    let player = !!turnCount ? 2 : 1;
+    playerScoring(
+      player,
+      discardPileFirstCard,
+      setPlayerOneScore,
+      setPlayerTwoScore
+    );
+  }, [discardPileFirstCardMemo]);
 
   //Logic when a card is played
   const cardPlayingLogicHandling = (card, player, newColor) => {
@@ -526,7 +640,10 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     <div>
       {isWinner?.exist ? (
         <>
-          <WinnerAnnouncer winner={isWinner?.winningPlayer} />
+          <WinnerAnnouncer
+            winnerData={isWinner && isWinner}
+            currentPlayerNumber={currentPlayerNumber}
+          />
         </>
       ) : (
         <>
@@ -657,9 +774,13 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
 
 export default UnoGame;
 
-/*missing features 
-scoring (rating)
+/*BUGS:
+playing a consecutinve draw 4 doesn nothing
 */
 
-// to do
-/* Fix Prompts & add +4 challenge prompt */
+/*missing features 
+scoring (rating) ??
+
+
+add disable barrier unless both players hands load
+*/

@@ -26,6 +26,7 @@ const UserSchema = new mongoose.Schema({
   rating: {
     type: Number,
     default: 0,
+    min: 0,
   },
 });
 UserSchema.pre("save", async function (next) {

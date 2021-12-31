@@ -124,6 +124,7 @@ const PlayerDashboard = () => {
           socket={socket}
           room="test"
           currentPlayerNumber={currentPlayerNumber}
+          // currentPlayerNumber={1}
         />
       ) : (
         <>
