@@ -12,20 +12,15 @@ const WinnerAnnouncer = ({ winnerData, currentPlayerNumber }) => {
     setIsOpen(false);
     //redirect to home
   };
-  console.log("wdata", winnerData);
-  console.log("current player", currentPlayerNumber);
   const currentPlayerRating =
     currentPlayerNumber === 1
       ? winnerData?.playerOneScore
       : winnerData?.playerTwoScore;
 
-  console.log("cpr", currentPlayerRating);
   const rating =
     currentPlayerNumber === winnerData?.winningPlayer
       ? Number(currentPlayerRating) * 2
       : -Number(currentPlayerRating) / 2;
-  console.log(rating);
-
   const updateUserRating = useCallback(async () => {
     if (!user) return;
     try {

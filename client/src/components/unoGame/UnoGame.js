@@ -7,10 +7,12 @@ import CardImage from "./CardImage.js";
 import PickColorPrompt from "./PickColorPrompt.js";
 import ChallengePrompt from "./ChallengePrompt.js";
 import WinnerAnnouncer from "./WinnerAnnouncer.js";
+import ChatWidget from "../chatWidget/ChatWidget.js";
 import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
-import { playerScoring } from "../../utils/playerScoring.ts";
+// import { playerScoring } from "../../utils/playerScoring.ts";
 
-const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
+const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
+  const { currentPlayerNumber } = currentPlayer;
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
   const [playerOneHand, setPlayerOneHand] = useState([]);
@@ -28,7 +30,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   const [isColorPrompt, setIsColorPrompt] = useState(false);
   const [isChallengePrompt, setIsChallengePrompt] = useState(false);
   const [promptChosenColor, setPromptChosenColor] = useState("none");
-  const [promptChallengeResult, setPromptChallengeResult] = useState(null);
+  const [promptChallengeResult, setPromptChallengeResult] = useState("none");
   const [isAI, setIsAI] = useState(false);
   const [didMultiplayerStart, setdidMultiplayerStart] = useState(false);
   const [drawFromPileAfterShuffle, setDrawFromPileAfterShuffle] = useState({
@@ -59,15 +61,16 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   );
   // tester;
   // useEffect(() => {
-  //   console.log(promptChallengeResult);
-  // }, [promptChallengeResult]);
+  //   console.log("gs", gameStart);
+  //   console.log("ms", didMultiplayerStart);
+  // }, [gameStart, didMultiplayerStart]);
   // Starting the game
 
   //auto Joining a room
 
   const gameStarter = useCallback(() => {
-    setPlayerOneHand(gameDeck.splice(0, 2));
-    setPlayerTwoHand(gameDeck.splice(0, 2));
+    setPlayerOneHand(gameDeck.splice(0, 7));
+    setPlayerTwoHand(gameDeck.splice(0, 7));
     while (true) {
       let firstCard = gameDeck[0];
       if (firstCard.type === cardTypes.NORMAL) {
@@ -85,14 +88,13 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   }, []);
 
   //ALL socket events
+
   useEffect(() => {
     if (currentPlayerNumber === 1) return;
-    socket && socket.emit("get-game-init", room);
     socket &&
       socket.on(
-        "game-init-p2",
+        "start-game",
         ({
-          gameStart,
           playerOneHand,
           playerTwoHand,
           discardPile,
@@ -104,33 +106,42 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
           setDiscardPile(discardPile);
           setDiscardPileFirstCard(discardPileFirstCard);
           setDrawPile(drawPile);
-          setGameStart(gameStart);
+          setGameStart(true);
           setdidMultiplayerStart(true);
         }
       );
   }, []);
-
   useEffect(() => {
     if (currentPlayerNumber === 2) return;
     gameStarter();
   }, []);
 
   useEffect(() => {
+    if (currentPlayerNumber === 2) return;
     if (!gameStart) return;
     socket &&
-      socket.on("send-game-init", () => {
-        socket &&
-          socket.emit("game-init", room, {
-            gameStart,
-            playerOneHand,
-            playerTwoHand,
-            discardPile,
-            discardPileFirstCard,
-            drawPile,
-          });
+      socket.emit("game-init", room, {
+        playerOneHand,
+        playerTwoHand,
+        discardPile,
+        discardPileFirstCard,
+        drawPile,
       });
   }, [gameStart]);
+
   useEffect(() => {
+    socket &&
+      socket.on("player-disconnected", (_id) => {
+        let winnerNumber;
+        if (currentPlayer.id !== _id) winnerNumber = currentPlayerNumber;
+
+        setIsWinner({
+          exist: true,
+          winningPlayer: winnerNumber,
+          playerOneScore: playerOneScore + 50,
+          playerTwoScore: playerOneScore + 50,
+        });
+      });
     socket &&
       socket.on(
         "game-update",
@@ -146,22 +157,28 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
           wildCardPlayerData,
           promptChosenColor,
         }) => {
+          if (!gameStart) setGameStart(true);
+          if (!didMultiplayerStart) setdidMultiplayerStart(true);
           playerOneHand &&
             setPlayerOneHand((prevState) => {
-              if (prevState.length !== playerOneHand) return playerOneHand;
+              if (prevState.length === playerOneHand.length) return prevState;
+              return playerOneHand;
             });
           playerTwoHand &&
             setPlayerTwoHand((prevState) => {
-              if (prevState.length !== playerTwoHand) return playerTwoHand;
+              if (prevState.length === playerTwoHand.length) return prevState;
+              return playerTwoHand;
             });
           discardPile &&
             setDiscardPile((prevState) => {
-              if (prevState.length !== discardPile) return discardPile;
+              if (prevState.length === discardPile.length) return prevState;
+              return discardPile;
             });
           discardPileFirstCard && setDiscardPileFirstCard(discardPileFirstCard);
           drawPile &&
             setDrawPile((prevState) => {
-              if (prevState.length !== drawPile) return drawPile;
+              if (prevState.length === drawPile.length) return prevState;
+              return drawPile;
             });
           typeof turnCount === "boolean" && setTurnCount(turnCount);
           typeof isChallengePrompt === "boolean" &&
@@ -232,13 +249,13 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
         promptChallengeResult,
       });
   }, [promptChallengeResult]);
-  useEffect(() => {
-    if (!gameStart) return;
-    socket &&
-      socket.emit("game-update", room, {
-        wildCardPlayerData: wildCardPlayerDataMemo,
-      });
-  }, [wildCardPlayerDataMemo]);
+  // useEffect(() => {
+  //   if (!gameStart) return;
+  //   socket &&
+  //     socket.emit("game-update", room, {
+  //       wildCardPlayerData: wildCardPlayerDataMemo,
+  //     });
+  // }, [wildCardPlayerDataMemo]);
   useEffect(() => {
     if (!gameStart) return;
     if (
@@ -325,7 +342,13 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   useEffect(() => {
     if (!gameStart) return;
     const { cardType, player } = wildCardPlayerData;
-    if (promptChosenColor === "none" || !!isColorPrompt || !cardType) return;
+    if (promptChosenColor === "none" || !cardType) return;
+    if (
+      (turnCount && currentPlayerNumber === 2) ||
+      (!turnCount && currentPlayerNumber === 1)
+    )
+      return;
+    if (!!isColorPrompt) return;
     const card = { type: cardType, number: null, color: null };
     if (cardType === cardTypes.WILD_FOUR) {
       setIsChallengePrompt(true);
@@ -348,8 +371,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
       number: null,
       color: null,
     };
-    if (!solo && (!player || player === currentPlayerNumber)) return;
-    if (!promptChallengeResult || !!isChallengePrompt) return;
+    if (promptChallengeResult === "none" || !!isChallengePrompt) return;
     switch (challengeAccepted(player)) {
       case "declined":
         cardDrawLogicHandling(player, 4);
@@ -365,7 +387,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     }
     cardPlayingLogicHandling(wilDFourCard, player, promptChosenColor);
     setWildCardPlayerData({ player: null, cardType: null });
-    setPromptChallengeResult(null);
+    setPromptChallengeResult("none");
     setPromptChosenColor("none");
   }, [promptChallengeResult]);
 
@@ -394,17 +416,13 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
   }, [gameStart, discardPileFirstCard, turnCount]);
 
   // Scoring system
-  useEffect(() => {
-    if (!gameStart) return;
-    if (discardPile.length === 1) return;
-    let player = !!turnCount ? 2 : 1;
-    playerScoring(
-      player,
-      discardPileFirstCard,
-      setPlayerOneScore,
-      setPlayerTwoScore
-    );
-  }, [discardPileFirstCardMemo]);
+  // useEffect(() => {
+  //   if (!gameStart) return;
+  //   if (discardPile.length === 1) return;
+  //   // let player = !!turnCount ? 2 : 1;
+  //   let player;
+  //   if (!turnCount && currentPlayerNumber === 1) player = 2;
+  //   if (turnCount && currentPlayerNumber === 2) player = 1;
 
   //Logic when a card is played
   const cardPlayingLogicHandling = (card, player, newColor) => {
@@ -475,6 +493,8 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
     let isCardPlayable = false;
     if ((player === 2 && turnCount) || (player === 1 && !turnCount))
       return isCardPlayable;
+    let setCurrentPlayerScore =
+      player === 1 ? setPlayerOneScore : setPlayerTwoScore;
     switch (card.type) {
       case cardTypes.NORMAL:
         if (
@@ -484,6 +504,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
           isCardPlayable = true;
           if (test) break;
           cardPlayingLogicHandling(card, player);
+          setCurrentPlayerScore((prevState) => prevState + card.number);
           setTurnCount((prevState) => !prevState);
         }
         break;
@@ -499,7 +520,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
           isCardPlayable = true;
           if (test) break;
           cardPlayingLogicHandling(card, player);
-
+          setCurrentPlayerScore((prevState) => prevState + 20);
           if (
             card.type === cardTypes.SPECIAL &&
             card.number === cardNumbers.DRAW_TWO
@@ -511,6 +532,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
       case cardTypes.WILD:
         isCardPlayable = true;
         if (test) break;
+        setCurrentPlayerScore((prevState) => prevState + 50);
         setIsColorPrompt(true);
         setWildCardPlayerData({ cardType: cardTypes.WILD, player });
         break;
@@ -521,6 +543,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
         }
         isCardPlayable = true;
         if (test) break;
+        setCurrentPlayerScore((prevState) => prevState + 50);
         setIsColorPrompt(true);
         setWildCardPlayerData({ cardType: cardTypes.WILD_FOUR, player });
         break;
@@ -685,7 +708,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
                   : null
               }
             >
-              <CardImage card={card} />
+              <CardImage card={currentPlayerNumber === 2 ? card : "back"} />
             </span>
           ))}
           <p>player 1 hand</p>
@@ -721,7 +744,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
                   : null
               }
             >
-              <CardImage card={card} />
+              <CardImage card={currentPlayerNumber === 1 ? card : "back"} />
             </span>
           ))}
           <p>pile</p>
@@ -768,19 +791,16 @@ const UnoGame = ({ gameType, socket, room, currentPlayerNumber }) => {
           />
         </>
       )}
+      <ChatWidget socket={socket} room={room} />
     </div>
   );
 };
 
 export default UnoGame;
 
-/*BUGS:
-playing a consecutinve draw 4 doesn nothing
-*/
+//fix bug when player 2 consecutive wild cardsn
 
-/*missing features 
-scoring (rating) ??
-
-
+/*
+TO ADD
 add disable barrier unless both players hands load
 */

@@ -11,12 +11,12 @@ const { instrument } = require("@socket.io/admin-ui");
 app.use(express.json());
 const PORT = process.env.PORT || 5000;
 
+app.use(cors());
 app.use("/api", require("./routes/auth"));
 app.use("/api", require("./routes/rating"));
 app.use("/api", require("./routes/private"));
 app.use(errorHandler);
 const server = http.createServer(app);
-// app.use(cors());
 const io = require("./socket/socket")(server, {
   cors: { origin: ["http://localhost:3000/", "https://admin.socket.io"] },
 });

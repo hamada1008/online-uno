@@ -15,7 +15,7 @@ const ChallengePrompt = ({
     <>
       <Modal backdrop="static" show={isChallengePrompt}>
         <Modal.Header>
-          <Modal.Title>Pick a Color</Modal.Title>
+          <Modal.Title>Challenge your opponent</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <button
