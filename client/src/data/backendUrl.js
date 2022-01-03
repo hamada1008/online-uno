@@ -4,7 +4,7 @@ const backendUrl = (type, id) => {
     case "rating":
       return baseUrl + "users/" + id + "/rating";
     default:
-      return baseUrl + type;
+      return `${baseUrl}${type ? type : ""}`;
   }
 };
 export default backendUrl;

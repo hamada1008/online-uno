@@ -1,6 +1,8 @@
 const socketIO = require("socket.io");
 module.exports = function (app) {
   io = socketIO(app);
+  // io.set("close timeout", 60);
+  // io.set("heartbeat timeout", 60);
   const game = io.of("/game");
   const getRoom = (room) => {
     return io._nsps.get("/game").adapter.rooms.get(room);
@@ -8,13 +10,16 @@ module.exports = function (app) {
   game.on("connection", (socket) => {
     const gameRooms = io._nsps.get("/game").adapter.rooms;
     //Room Handling
+    socket.on("leave-room", (room) => {
+      socket.leave(room);
+    });
     socket.on("create-room", (room) => {
       const lobbyRoom = getRoom(room);
-      const _id = socket.id;
-      gameRooms.forEach((value, key) => {
-        if (key === _id) return;
-        socket.leave(key);
-      });
+      // const _id = socket.id;
+      // gameRooms.forEach((value, key) => {
+      //   if (key === _id) return;
+      //   socket.leave(key);
+      // });
       if (lobbyRoom)
         return socket.emit("room-error", {
           errorMessage: "The room you are tying to create already exists",
@@ -57,14 +62,6 @@ module.exports = function (app) {
     // });
 
     //GAME SOCKETS
-
-    //game initialization
-    // socket.on("game-init", (room, gameState) => {
-    //   socket.broadcast.to(room).emit("game-init-p2", gameState);
-    // });
-    // socket.on("get-game-init", (room) => {
-    //   socket.broadcast.to(room).emit("send-game-init");
-    // });
 
     socket.on("game-init", (room, gameState) => {
       socket.broadcast.to(room).emit("start-game", gameState);

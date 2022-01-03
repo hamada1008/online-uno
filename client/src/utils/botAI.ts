@@ -63,8 +63,8 @@ export const botAIChallenge = (
 
 export const botAIColor = (
   playerHand: cardInterface[],
-  set_: colorPromptSetState,
-  set__: colorSetState
+  set__: colorSetState,
+  set_: colorPromptSetState
 ): any => {
   let dominantColor = findDominantColor(playerHand);
   set__(dominantColor);
@@ -91,4 +91,3 @@ export const botAINormal = (
     __(opposingPlayer);
   }
 };
-

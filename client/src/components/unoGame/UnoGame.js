@@ -1,4 +1,13 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  useLayoutEffect,
+  useContext,
+} from "react";
+import { UserContext } from "../../context/Contexts.js";
 import arrayShuffle from "array-shuffle";
 import deck from "../../cards/deck.js";
 import cardNumbers from "../../cards/number.ts";
@@ -7,12 +16,17 @@ import CardImage from "./CardImage.js";
 import PickColorPrompt from "./PickColorPrompt.js";
 import ChallengePrompt from "./ChallengePrompt.js";
 import WinnerAnnouncer from "./WinnerAnnouncer.js";
+import { useNavigate, useLocation } from "react-router-dom";
 import ChatWidget from "../chatWidget/ChatWidget.js";
+import ScreenDisable from "./ScreenDisable.js";
 import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
 // import { playerScoring } from "../../utils/playerScoring.ts";
 
 const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
+  const { user } = useContext(UserContext);
   const { currentPlayerNumber } = currentPlayer;
+  const navigate = useNavigate();
+  const location = useLocation();
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
   const [playerOneHand, setPlayerOneHand] = useState([]);
@@ -26,7 +40,6 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   const [failedUnoMessage, setFailedUnoMessage] = useState("");
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
-  const [solo, setSolo] = useState(gameType === "multiplayer" ? false : true);
   const [isColorPrompt, setIsColorPrompt] = useState(false);
   const [isChallengePrompt, setIsChallengePrompt] = useState(false);
   const [promptChosenColor, setPromptChosenColor] = useState("none");
@@ -61,12 +74,9 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   );
   // tester;
   // useEffect(() => {
-  //   console.log("gs", gameStart);
-  //   console.log("ms", didMultiplayerStart);
-  // }, [gameStart, didMultiplayerStart]);
+  //   console.log(location);
+  // }, [location]);
   // Starting the game
-
-  //auto Joining a room
 
   const gameStarter = useCallback(() => {
     setPlayerOneHand(gameDeck.splice(0, 7));
@@ -84,7 +94,6 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
     }
     setDrawPile(gameDeck);
     setGameStart(true);
-    setdidMultiplayerStart(true);
   }, []);
 
   //ALL socket events
@@ -156,9 +165,15 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
           promptChallengeResult,
           wildCardPlayerData,
           promptChosenColor,
+          didMultiplayerStart,
         }) => {
-          if (!gameStart) setGameStart(true);
-          if (!didMultiplayerStart) setdidMultiplayerStart(true);
+          if (typeof gameStart === "boolean" && !gameStart) setGameStart(true);
+          if (
+            typeof didMultiplayerStart === "boolean" &&
+            !didMultiplayerStart
+          ) {
+            setdidMultiplayerStart(true);
+          }
           playerOneHand &&
             setPlayerOneHand((prevState) => {
               if (prevState.length === playerOneHand.length) return prevState;
@@ -191,8 +206,18 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
         }
       );
   }, []);
+
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
+    socket &&
+      socket.emit("game-update", room, {
+        didMultiplayerStart: false,
+      });
+  }, [didMultiplayerStart]);
+  useEffect(() => {
+    if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket &&
       socket.emit("game-update", room, {
         playerOneHand,
@@ -200,6 +225,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [playerOneHand.length]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket &&
       socket.emit("game-update", room, {
         playerTwoHand,
@@ -207,6 +233,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [playerTwoHand.length]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket &&
       socket.emit("game-update", room, {
         discardPile,
@@ -214,6 +241,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [discardPile.length]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket &&
       socket.emit("game-update", room, {
         discardPileFirstCard: discardPileFirstCardMemo,
@@ -221,6 +249,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [discardPileFirstCardMemo]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket &&
       socket.emit("game-update", room, {
         drawPile,
@@ -228,10 +257,12 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [drawPile.length]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket && socket.emit("game-update", room, { turnCount });
   }, [turnCount]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     socket &&
       socket.emit("game-update", room, {
         isChallengePrompt,
@@ -239,6 +270,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [isChallengePrompt]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     if (
       (turnCount && currentPlayerNumber === 1) ||
       (!turnCount && currentPlayerNumber === 2)
@@ -258,6 +290,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   // }, [wildCardPlayerDataMemo]);
   useEffect(() => {
     if (!gameStart) return;
+    if (gameType !== "multiplayer") return;
     if (
       (turnCount && currentPlayerNumber === 1) ||
       (!turnCount && currentPlayerNumber === 2)
@@ -271,7 +304,8 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   //end of socket events
   //detecting winner
   useEffect(() => {
-    if (!gameStart || !didMultiplayerStart) return;
+    if (!gameStart) return;
+    if (gameType === "multiplayer" && !didMultiplayerStart) return;
     switch (true) {
       case playerOneHand.length === 0:
         setIsWinner({
@@ -322,7 +356,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   useEffect(() => {
     if (drawPile.length !== 0) return;
     if (
-      !solo &&
+      gameType === "multiplayer" &&
       ((turnCount && currentPlayerNumber === 1) ||
         (!turnCount && currentPlayerNumber === 2))
     )
@@ -344,8 +378,9 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
     const { cardType, player } = wildCardPlayerData;
     if (promptChosenColor === "none" || !cardType) return;
     if (
-      (turnCount && currentPlayerNumber === 2) ||
-      (!turnCount && currentPlayerNumber === 1)
+      gameType === "multiplayer" &&
+      ((turnCount && currentPlayerNumber === 2) ||
+        (!turnCount && currentPlayerNumber === 1))
     )
       return;
     if (!!isColorPrompt) return;
@@ -618,8 +653,8 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
 
   // player 2 AI no Prompts
   useEffect(() => {
-    if (!isAI) return;
-    if (!gameStart || !solo) return;
+    // if (!isAI) return;
+    if (!gameStart || gameType === "multiplayer") return;
     if (turnCount) return;
     if (playerTwoHand.length === 2 && !playerTwoUnoState)
       return pileDrawlogicHandling(1);
@@ -627,32 +662,37 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   }, [
     gameStart,
     turnCount,
-    solo,
     playerTwoUnoState,
-    playerTwoHand,
+    playerTwoHand.length,
+    playerOneHand.length,
     wasCardDrawnFromDeckPile,
     isAI,
+    discardPileFirstCardMemo,
+    discardPile.length,
+    drawPile.length,
   ]);
   // player 2 AI color Prompt
   useEffect(() => {
-    if (!isAI) return;
-    if (!gameStart || !solo || !isColorPrompt) return;
-    if (turnCount) return setIsColorPrompt(false);
-    botAIColor(playerTwoHand, setIsColorPrompt, setPromptChosenColor);
+    // if (!isAI) return;
+    if (!gameStart || gameType === "multiplayer" || !isColorPrompt) return;
+    if (turnCount) return;
+    if (!turnCount && !isColorPrompt) return;
+    botAIColor(playerTwoHand, setPromptChosenColor, setIsColorPrompt);
+    console.log("SHOUL HAVE CHANGED COLOR");
   });
 
   // player 2 AI challenge Prompt
   useEffect(() => {
     if (!turnCount) return;
-    if (!gameStart || !solo || !isChallengePrompt) return;
+    if (!gameStart || gameType === "multiplayer" || !isChallengePrompt) return;
     botAIChallenge(setPromptChallengeResult, setIsChallengePrompt);
   });
 
   // AI switcher
-  useEffect(() => {
-    if (turnCount) return setIsAI(false);
-    if (!turnCount) return setIsAI(true);
-  }, [turnCount]);
+  // useEffect(() => {
+  //   if (turnCount) return setIsAI(false);
+  //   if (!turnCount) return setIsAI(true);
+  // }, [turnCount]);
   //player Two AI uno announcing
   useEffect(() => {
     if (!gameStart || playerTwoHand.length !== 2 || playerTwoUnoState) return;
@@ -753,7 +793,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
           ))}
           <p>deck</p>
           {drawPile.map((card) => (
-            <CardImage card={card} />
+            <CardImage card="back" />
           ))}
           <span>player 2 hand size: {playerTwoHand.length}</span>
           <br />
@@ -764,10 +804,7 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
           <span>deckPile size: {drawPile.length}</span>
           <br />
           <span>
-            <button onClick={() => setSolo((prevState) => !prevState)}>
-              STOP AI
-            </button>
-            <span style={{ fontSize: 120 }}>{solo.toString()}</span>
+            <span style={{ fontSize: 120 }}>{gameType}</span>
             TOTAL:
             {drawPile.length +
               playerTwoHand.length +
@@ -791,16 +828,20 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
           />
         </>
       )}
-      <ChatWidget socket={socket} room={room} />
+      {gameType === "multiplayer" ? (
+        <ChatWidget socket={socket} room={room} />
+      ) : null}
+      {gameType === "multiplayer" && !didMultiplayerStart ? (
+        <ScreenDisable />
+      ) : null}
     </div>
   );
 };
 
 export default UnoGame;
 
-//fix bug when player 2 consecutive wild cardsn
-
 /*
-TO ADD
-add disable barrier unless both players hands load
+BUGS
+
+single (no challenge prompt when cpu playes a w4)
 */

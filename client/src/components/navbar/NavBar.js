@@ -1,6 +1,11 @@
-import React from "react";
-
+import React, { useContext } from "react";
+import { UserContext } from "../../context/Contexts";
 const Navbar = (props) => {
+  const { setUser } = useContext(UserContext);
+  const logoutHandler = () => {
+    localStorage.clear();
+    setUser(undefined);
+  };
   return (
     <div className="navbar">
       <div>React Uno</div>
@@ -10,9 +15,7 @@ const Navbar = (props) => {
           <li>
             rating <span>{props.rating}</span>
           </li>
-          <button onClick={() => localStorage.removeItem("authToken")}>
-            Logout
-          </button>
+          <button onClick={logoutHandler}>Logout</button>
         </ul>
       </div>
     </div>

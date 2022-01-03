@@ -1,3 +1,4 @@
+import "./PlayerDashboard.scss";
 import React, {
   useContext,
   useEffect,
@@ -5,21 +6,23 @@ import React, {
   useState,
   useRef,
 } from "react";
-import "./PlayerDashboard.scss";
+import { UserContext } from "../../context/Contexts";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import NavBar from "../navbar/NavBar";
 import WaitingRoom from "../waitingRoom/WaitingRoom";
 import UnoGame from "../unoGame/UnoGame";
-import { UserContext } from "../../context/Contexts";
 import axios from "axios";
 import io from "socket.io-client";
 import url from "../../data/backendUrl";
 import socketUrl from "../../data/socketUrl";
-import ChatWidget from "../chatWidget/ChatWidget";
+
 let socket;
 let currentPlayer;
 
 const PlayerDashboard = () => {
-  const { user, setUser } = useContext(UserContext);
+  const { user } = useContext(UserContext);
+  const token = localStorage.getItem("authToken");
+  const navigate = useNavigate();
   const lastRating = useRef();
   const [rating, setRating] = useState(lastRating.current);
   const [roomType, setRoomType] = useState("Create");
@@ -27,20 +30,11 @@ const PlayerDashboard = () => {
   const [roomError, setRoomError] = useState("");
   const [roomReady, setRoomReady] = useState("");
   const [isUnoGame, setIsUnoGame] = useState(false);
-  const token = localStorage.getItem("authToken");
-  const authorizeToken = useCallback(async () => {
-    if (!token) return localStorage.clear();
-    try {
-      let response = await axios.get(url(), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUser(response.data.msg);
-    } catch (err) {
-      console.log(err.response.data.msg);
-    }
-  }, [token, setUser]);
+  const [isOneVsOne, setIsOneVsOne] = useState(false);
+  const [isWaitingRoom, setIsWaitingRoom] = useState(false);
+
   const fetchUserRating = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.isLoggedIn) return;
     try {
       let response = await axios.get(url("rating", user.id), {
         headers: { Authorization: `Bearer ${token}` },
@@ -51,9 +45,7 @@ const PlayerDashboard = () => {
       console.log(err.response.data.msg);
     }
   }, [user, token]);
-  useEffect(() => {
-    authorizeToken();
-  }, [authorizeToken]);
+
   useEffect(() => {
     fetchUserRating();
   }, [fetchUserRating]);
@@ -62,15 +54,15 @@ const PlayerDashboard = () => {
   useEffect(() => {
     socket = io.connect(socketUrl, {
       transports: ["websocket"],
+      reconnectionAttempts: 10,
+      timeout: 60,
     });
     return socket.off("disconnect");
   }, []);
   //error Reset
   useEffect(() => {
     if (roomError === "") return;
-    setTimeout(() => {
-      setRoomError("");
-    }, 1000);
+    setRoomError("");
   }, [roomType, waitingRoomId]);
   //Room Creation or joining handler
   const roomCreationHandler = (e) => {
@@ -86,6 +78,10 @@ const PlayerDashboard = () => {
       } else {
         socket.emit("join-room", roomId);
       }
+    }
+    console.log(roomError);
+    if (roomError === "") {
+      setIsWaitingRoom(true);
     }
     e.target.reset();
   };
@@ -105,24 +101,12 @@ const PlayerDashboard = () => {
     });
   }, []);
 
-  //tester easy join
-  // useEffect(() => {
-  //   socket.emit("easy-join");
-  //   socket.on("easy-player", (player) => {
-  //     currentPlayer = player;
-  //   });
-  //   setTimeout(() => {
-  //     setIsUnoGame(true);
-  //   }, 1000);
-  // }, []);
+  useEffect(() => {
+    if (!waitingRoomId) return;
+    if (roomError !== "") return setIsWaitingRoom(false);
+    setIsWaitingRoom(true);
+  }, [roomError]);
 
-  <UnoGame
-    gameType="multiplayer"
-    socket={socket}
-    room={waitingRoomId}
-    currentPlayer={currentPlayer}
-    // currentPlayer={id:null, currentPlayerNumber :1}
-  />;
   return (
     <>
       {isUnoGame ? (
@@ -131,40 +115,58 @@ const PlayerDashboard = () => {
           socket={socket}
           room={waitingRoomId}
           currentPlayer={currentPlayer}
-          // currentPlayer={id:null, currentPlayerNumber :1}
         />
       ) : (
         <>
           <NavBar userName={user?.username} rating={rating} />
-          <button>1 vs cpu</button>
-          <button>1 vs 1</button>
+          <Link to="/game/single"> 1 v CPU</Link>
+          <button onClick={() => setIsOneVsOne(true)}>1 vs 1</button>
           <br />
           <br />
-          <button onClick={() => setRoomType("Create")}>Create a room</button>
-          <button onClick={() => setRoomType("Join")}>Join a room</button>
-          <br />
-          <br />
-          <form onSubmit={roomCreationHandler} autoComplete="off">
-            <label htmlFor="room">{roomType} a room</label>
-            <input
-              placeholder="Enter the room ID"
-              name="room"
-              type="text"
-              autocomplete="off"
-            />
-            <button type="submit"> {roomType} </button>
-          </form>
-          <br />
-          <br />
-          {roomType === "Create" ? (
-            <WaitingRoom roomId={waitingRoomId} />
+          {isOneVsOne ? (
+            <>
+              {!isWaitingRoom ? (
+                <>
+                  <button onClick={() => setRoomType("Create")}>
+                    Create a room
+                  </button>
+                  <button onClick={() => setRoomType("Join")}>
+                    Join a room
+                  </button>
+                  <br />
+                  <br />
+                  <form onSubmit={roomCreationHandler} autoComplete="off">
+                    <label htmlFor="room">{roomType} a room</label>
+                    <input
+                      placeholder="Enter the room ID"
+                      name="room"
+                      type="text"
+                      autoComplete="off"
+                    />
+                    <button type="submit"> {roomType} </button>
+                  </form>
+                  <br />
+                  <br />
+                </>
+              ) : null}
+              {isWaitingRoom ? (
+                <WaitingRoom
+                  roomId={waitingRoomId}
+                  isWaitingRoom={isWaitingRoom}
+                  setIsWaitingRoom={setIsWaitingRoom}
+                  socket={socket}
+                />
+              ) : null}
+              <br />
+              <br />
+              {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
+              <br />
+              <br />
+              {roomReady ? (
+                <h1 style={{ color: "green" }}>{roomReady}</h1>
+              ) : null}
+            </>
           ) : null}
-          <br />
-          <br />
-          {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
-          <br />
-          <br />
-          {roomReady ? <h1 style={{ color: "green" }}>{roomReady}</h1> : null}
         </>
       )}
     </>

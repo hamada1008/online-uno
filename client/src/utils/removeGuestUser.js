@@ -2,16 +2,15 @@ import axios from "axios";
 import url from "../data/backendUrl";
 
 const removeGuestUser = async () => {
-  console.log("cleared");
+  const isGuest = localStorage.getItem("isGuest");
   const guestUserToken = localStorage.getItem("authToken");
+  if (!isGuest || isGuest === "No") return;
+  localStorage.clear();
   try {
-    axios.delete(url("guestLogout"), {
+    await axios.delete(url("guest-logout"), {
       headers: { Authorization: `Bearer ${guestUserToken}` },
     });
-    localStorage.clear();
-  } catch (err) {
-    localStorage.clear();
-  }
+  } catch (err) {}
 };
 
 export default removeGuestUser;

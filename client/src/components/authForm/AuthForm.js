@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { UserContext } from "../../context/Contexts";
 import "./AuthForm.scss";
 import axios from "axios";
 import url from "../../data/backendUrl";
 
 const AuthForm = () => {
-  const [register, setRegister] = useState(true);
+  const [register, setRegister] = useState(false);
   const [error, setError] = useState("");
+  const { setUser } = useContext(UserContext);
 
   useEffect(() => {
     error &&
@@ -31,12 +33,13 @@ const AuthForm = () => {
       if (response?.data?.success) {
         localStorage.setItem("authToken", response.data.msg);
         localStorage.setItem("isGuest", "No");
+        setUser({ isLoggedIn: true });
       }
-      e.target.reset();
     } catch (err) {
       localStorage.clear();
       setError(err.response?.data?.msg);
     }
+    e.target.reset();
   };
   const guestRegister = async () => {
     try {
@@ -44,6 +47,7 @@ const AuthForm = () => {
       if (response.data.success) {
         localStorage.setItem("authToken", response.data.msg);
         localStorage.setItem("isGuest", "Yes");
+        setUser({ isLoggedIn: true });
       }
     } catch (err) {
       localStorage.clear();
@@ -60,9 +64,9 @@ const AuthForm = () => {
           </>
         )}
         <label htmlFor="email">Email:</label>
-        <input type="email" name="email" />
+        <input type="email" name="email" defaultValue="test@test.com" />
         <label htmlFor="password">Password:</label>
-        <input type="password" name="password" />
+        <input type="password" name="password" defaultValue="123456" />
         {register && (
           <>
             <label htmlFor="password">Confirm Password:</label>
@@ -81,8 +85,7 @@ const AuthForm = () => {
         {register ? "Have an account? Login here" : "New member? Register here"}
       </button>
       <button onClick={guestRegister}>
-        {" "}
-        Want to try out our website? try from here
+        Want to try out the website? try from here
       </button>
     </div>
   );
