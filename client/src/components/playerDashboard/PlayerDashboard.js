@@ -1,54 +1,24 @@
 import "./PlayerDashboard.scss";
-import React, {
-  useContext,
-  useEffect,
-  useCallback,
-  useState,
-  useRef,
-} from "react";
-import { UserContext } from "../../context/Contexts";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useEffect, useLayoutEffect, useState } from "react";
+// import { UserContext } from "../../context/Contexts";
+import { useNavigate } from "react-router-dom";
 import NavBar from "../navbar/NavBar";
 import WaitingRoom from "../waitingRoom/WaitingRoom";
 import UnoGame from "../unoGame/UnoGame";
-import axios from "axios";
 import io from "socket.io-client";
-import url from "../../data/backendUrl";
 import socketUrl from "../../data/socketUrl";
 
 let socket;
 let currentPlayer;
 
 const PlayerDashboard = () => {
-  const { user } = useContext(UserContext);
-  const token = localStorage.getItem("authToken");
   const navigate = useNavigate();
-  const lastRating = useRef();
-  const [rating, setRating] = useState(lastRating.current);
   const [roomType, setRoomType] = useState("Create");
   const [waitingRoomId, setWaitingRoomId] = useState("");
   const [roomError, setRoomError] = useState("");
   const [roomReady, setRoomReady] = useState("");
   const [isUnoGame, setIsUnoGame] = useState(false);
-  const [isOneVsOne, setIsOneVsOne] = useState(false);
   const [isWaitingRoom, setIsWaitingRoom] = useState(false);
-
-  const fetchUserRating = useCallback(async () => {
-    if (!user || user.isLoggedIn) return;
-    try {
-      let response = await axios.get(url("rating", user.id), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      lastRating.current = response.data.msg;
-      setRating(response.data.msg);
-    } catch (err) {
-      console.log(err.response.data.msg);
-    }
-  }, [user, token]);
-
-  useEffect(() => {
-    fetchUserRating();
-  }, [fetchUserRating]);
 
   //socket io onMount
   useEffect(() => {
@@ -118,55 +88,49 @@ const PlayerDashboard = () => {
         />
       ) : (
         <>
-          <NavBar userName={user?.username} rating={rating} />
-          <Link to="/game/single"> 1 v CPU</Link>
-          <button onClick={() => setIsOneVsOne(true)}>1 vs 1</button>
+          <NavBar />
           <br />
           <br />
-          {isOneVsOne ? (
-            <>
-              {!isWaitingRoom ? (
-                <>
-                  <button onClick={() => setRoomType("Create")}>
-                    Create a room
-                  </button>
-                  <button onClick={() => setRoomType("Join")}>
-                    Join a room
-                  </button>
-                  <br />
-                  <br />
-                  <form onSubmit={roomCreationHandler} autoComplete="off">
-                    <label htmlFor="room">{roomType} a room</label>
-                    <input
-                      placeholder="Enter the room ID"
-                      name="room"
-                      type="text"
-                      autoComplete="off"
-                    />
-                    <button type="submit"> {roomType} </button>
-                  </form>
-                  <br />
-                  <br />
-                </>
-              ) : null}
-              {isWaitingRoom ? (
-                <WaitingRoom
-                  roomId={waitingRoomId}
-                  isWaitingRoom={isWaitingRoom}
-                  setIsWaitingRoom={setIsWaitingRoom}
-                  socket={socket}
-                />
-              ) : null}
-              <br />
-              <br />
-              {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
-              <br />
-              <br />
-              {roomReady ? (
-                <h1 style={{ color: "green" }}>{roomReady}</h1>
-              ) : null}
-            </>
-          ) : null}
+
+          <>
+            {!isWaitingRoom ? (
+              <>
+                <button onClick={() => setRoomType("Create")}>
+                  Create a room
+                </button>
+                <button onClick={() => setRoomType("Join")}>Join a room</button>
+                <br />
+                <br />
+                <form onSubmit={roomCreationHandler} autoComplete="off">
+                  <label htmlFor="room">{roomType} a room</label>
+                  <input
+                    placeholder="Enter the room ID"
+                    name="room"
+                    type="text"
+                    autoComplete="off"
+                  />
+                  <button type="submit"> {roomType} </button>
+                </form>
+                <br />
+                <br />
+              </>
+            ) : null}
+            {isWaitingRoom ? (
+              <WaitingRoom
+                roomId={waitingRoomId}
+                isWaitingRoom={isWaitingRoom}
+                setIsWaitingRoom={setIsWaitingRoom}
+                socket={socket}
+                roomType={roomType}
+              />
+            ) : null}
+            <br />
+            <br />
+            {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
+            <br />
+            <br />
+            {roomReady ? <h1 style={{ color: "green" }}>{roomReady}</h1> : null}
+          </>
         </>
       )}
     </>

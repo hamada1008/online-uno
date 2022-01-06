@@ -10,7 +10,7 @@ exports.getRatingController = async (req, res, next) => {
 };
 exports.updateRatingController = async (req, res, next) => {
   const { gameRating } = req.body;
-  if (!gameRating) {
+  if (typeof gameRating !== "number") {
     return next(new ErrorRes(`Could not update this user's rating`, 400));
   }
   try {

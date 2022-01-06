@@ -26,7 +26,6 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
   const { user } = useContext(UserContext);
   const { currentPlayerNumber } = currentPlayer;
   const navigate = useNavigate();
-  const location = useLocation();
   let gameDeck = deck.map((el) => el);
   const [gameStart, setGameStart] = useState(false);
   const [playerOneHand, setPlayerOneHand] = useState([]);
@@ -678,7 +677,6 @@ const UnoGame = ({ gameType, socket, room, currentPlayer }) => {
     if (turnCount) return;
     if (!turnCount && !isColorPrompt) return;
     botAIColor(playerTwoHand, setPromptChosenColor, setIsColorPrompt);
-    console.log("SHOUL HAVE CHANGED COLOR");
   });
 
   // player 2 AI challenge Prompt

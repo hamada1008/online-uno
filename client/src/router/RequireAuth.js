@@ -1,10 +1,10 @@
 import { useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { UserContext } from "../context/Contexts";
-const RequireAuth = ({ children }) => {
+const RequireAuth = () => {
   const { user } = useContext(UserContext);
   if (user === undefined) return <Navigate to="/auth" replace />;
-  return children;
+  return <Outlet />;
 };
 
 export default RequireAuth;

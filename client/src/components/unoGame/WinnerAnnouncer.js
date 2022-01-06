@@ -3,14 +3,16 @@ import { Modal } from "react-bootstrap";
 import axios from "axios";
 import url from "../../data/backendUrl";
 import { UserContext } from "../../context/Contexts";
+import { useNavigate } from "react-router-dom";
 
 const WinnerAnnouncer = ({ winnerData, currentPlayerNumber }) => {
   const [isOpen, setIsOpen] = useState(true);
-  const user = useContext(UserContext);
+  const { user } = useContext(UserContext);
   const token = localStorage.getItem("authToken");
+  const navigate = useNavigate();
   const closeCurrentGame = () => {
     setIsOpen(false);
-    //redirect to home
+    navigate("/", { replace: true });
   };
   const currentPlayerRating =
     currentPlayerNumber === 1
@@ -24,9 +26,13 @@ const WinnerAnnouncer = ({ winnerData, currentPlayerNumber }) => {
   const updateUserRating = useCallback(async () => {
     if (!user) return;
     try {
-      await axios.post(url("rating", user.id), rating, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.put(
+        url("rating", user.id),
+        { gameRating: rating },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
     } catch (err) {
       console.log(err?.response?.data?.msg);
     }

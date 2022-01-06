@@ -33,7 +33,7 @@ const AuthForm = () => {
       if (response?.data?.success) {
         localStorage.setItem("authToken", response.data.msg);
         localStorage.setItem("isGuest", "No");
-        setUser({ isLoggedIn: true });
+        setUser({ isLogging: true });
       }
     } catch (err) {
       localStorage.clear();
@@ -47,7 +47,7 @@ const AuthForm = () => {
       if (response.data.success) {
         localStorage.setItem("authToken", response.data.msg);
         localStorage.setItem("isGuest", "Yes");
-        setUser({ isLoggedIn: true });
+        setUser({ isLogging: true });
       }
     } catch (err) {
       localStorage.clear();

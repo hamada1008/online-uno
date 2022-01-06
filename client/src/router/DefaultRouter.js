@@ -15,6 +15,7 @@ import {
 import AuthForm from "../components/authForm/AuthForm";
 import PlayerDashboard from "../components/playerDashboard/PlayerDashboard";
 import NotFound from "../components/notFound/NotFound";
+import PlayerGameChoice from "../components/playerDashboard/PlayerGameChoice";
 import UnoGame from "../components/unoGame/UnoGame";
 import RequireAuth from "./RequireAuth";
 import url from "../data/backendUrl";
@@ -30,7 +31,7 @@ const DefaultRouter = () => {
       setUser(undefined);
       return;
     }
-    if ((user && !user?.isLoggedIn) || user === undefined) return;
+    if ((user && !user?.isLogging) || user === undefined) return;
     try {
       let response = await axios.get(url(), {
         headers: { Authorization: `Bearer ${token}` },
@@ -46,36 +47,28 @@ const DefaultRouter = () => {
   useLayoutEffect(() => {
     authorizeToken();
   }, [authorizeToken]);
-  useEffect(() => {
-    console.log(user);
-  });
+
   return (
     <Router>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <PlayerDashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          exact
-          path="/game/single"
-          element={
-            user ? (
-              <RequireAuth>
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<PlayerGameChoice />} />
+          <Route
+            exact
+            path="/game/single"
+            element={
+              user ? (
                 <UnoGame
                   gameType="single"
                   currentPlayer={{ id: 0, currentPlayerNumber: 1 }}
                 />
-              </RequireAuth>
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route exact path="game/multiplayer/" element={<PlayerDashboard />} />
+        </Route>
         <Route
           exact
           path="/auth"
