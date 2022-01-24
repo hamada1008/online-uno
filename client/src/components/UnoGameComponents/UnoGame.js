@@ -44,7 +44,9 @@ const UnoGame = ({
   const [playerOneUnoState, setPlayerOneUnoState] = useState(false);
   const [playerTwoUnoState, setPlayerTwoUnoState] = useState(false);
   const [turnCount, setTurnCount] = useState(true);
-  const [failedUnoMessage, setFailedUnoMessage] = useState("");
+  const [failedUnoMessage, setFailedUnoMessage] = useState(
+    "Sorry player2 , you forgot to say uno, you got +2 cards"
+  );
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
   const [isColorPrompt, setIsColorPrompt] = useState(false);
@@ -760,7 +762,9 @@ const UnoGame = ({
             {gameType === "multiplayer" ? (
               <strong>
                 <span>Player 2:</span>
-                {" " + playersUsernames?.player2}
+                {" " + playersUsernames?.player2.startsWith("guest")
+                  ? playersUsernames?.player2.substring(0, 12)
+                  : playersUsernames?.player2}
               </strong>
             ) : null}
             {currentPlayerNumber === 2 ? (
@@ -810,10 +814,16 @@ const UnoGame = ({
             {gameType === "multiplayer" ? (
               <strong>
                 <span>Player 1:</span>
-                {" " + playersUsernames?.player1}
+                {" " + playersUsernames?.player1.startsWith("guest")
+                  ? playersUsernames?.player1.substring(0, 12)
+                  : playersUsernames?.player1}
               </strong>
             ) : (
-              <strong>{user?.username}</strong>
+              <strong>
+                {user?.username.startsWith("guest")
+                  ? user?.username.substring(0, 12)
+                  : user?.username}
+              </strong>
             )}
             {currentPlayerNumber === 1 ? (
               <>
