@@ -1,36 +1,30 @@
 const socketIO = require("socket.io");
 module.exports = function (app) {
   io = socketIO(app);
-  // io.set("close timeout", 60);
-  // io.set("heartbeat timeout", 60);
   const game = io.of("/game");
   const getRoom = (room) => {
     return io._nsps.get("/game").adapter.rooms.get(room);
   };
+  let playersUsernames = { player1: "", player2: "" };
   game.on("connection", (socket) => {
     const gameRooms = io._nsps.get("/game").adapter.rooms;
     //Room Handling
     socket.on("leave-room", (room) => {
       socket.leave(room);
     });
-    socket.on("create-room", (room) => {
+    socket.on("create-room", (room, username) => {
       const lobbyRoom = getRoom(room);
-      // const _id = socket.id;
-      // gameRooms.forEach((value, key) => {
-      //   if (key === _id) return;
-      //   socket.leave(key);
-      // });
       if (lobbyRoom)
         return socket.emit("room-error", {
           errorMessage: "The room you are tying to create already exists",
         });
       socket.join(room);
       socket.emit("get-player-number", 1);
+      playersUsernames.player1 = username;
     });
-    socket.on("join-room", (room) => {
+    socket.on("join-room", (room, username) => {
       let lobbyRoom = getRoom(room);
       const roomSize = lobbyRoom?.size;
-      const _id = socket.id;
       if (!roomSize)
         return socket.emit("room-error", {
           errorMessage:
@@ -47,22 +41,19 @@ module.exports = function (app) {
           errorMessage: "Cannot Join the same room you created",
         });
       socket.emit("get-player-number", 2);
-      game.in(room).emit("room-ready", "Your room is Ready, starting the game");
+      playersUsernames.player2 = username;
+      game
+        .in(room)
+        .emit(
+          "room-ready",
+          "Your room is Ready, starting the game",
+          playersUsernames
+        );
     });
-
-    // test easy join
-    // socket.on("easy-join", () => {
-    //   const roomSize = io._nsps.get("/game").adapter.rooms.get("test")?.size;
-    //   socket.join("test");
-    //   const playerNumber = !roomSize ? 1 : 2;
-    //   socket.emit("easy-player", {
-    //     id: socket.id,
-    //     currentPlayerNumber: playerNumber,
-    //   });
-    // });
 
     //GAME SOCKETS
 
+    //game start
     socket.on("game-init", (room, gameState) => {
       socket.broadcast.to(room).emit("start-game", gameState);
     });
@@ -71,6 +62,7 @@ module.exports = function (app) {
     socket.on("game-update", (room, gameState) => {
       socket.broadcast.to(room).emit("game-update", gameState);
     });
+
     //CHAT SOCKETS
     socket.on("send-message", (room, message) => {
       socket.broadcast.to(room).emit("recieve-message", message);

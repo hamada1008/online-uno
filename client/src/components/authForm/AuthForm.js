@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { UserContext } from "../../context/Contexts";
 import "./AuthForm.scss";
 import axios from "axios";
@@ -55,23 +55,37 @@ const AuthForm = () => {
     }
   };
   return (
-    <div>
+    <div className="auth">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         {register && (
-          <>
+          <div className="form-input-fields">
             <label htmlFor="username">Username:</label>
-            <input type="text" name="username" />
-          </>
+            <input type="text" name="username" placeholder="User Name" />
+          </div>
         )}
-        <label htmlFor="email">Email:</label>
-        <input type="email" name="email" defaultValue="test@test.com" />
-        <label htmlFor="password">Password:</label>
-        <input type="password" name="password" defaultValue="123456" />
+        <div className="form-input-fields">
+          <label htmlFor="email">Email:</label>
+          <input type="email" name="email" placeholder="Email" />
+        </div>
+        <div className="form-input-fields">
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            autoComplete="on"
+          />
+        </div>
         {register && (
-          <>
+          <div className="form-input-fields">
             <label htmlFor="password">Confirm Password:</label>
-            <input type="password" name="confirmPassword" />
-          </>
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Repeat Password"
+              autoComplete="on"
+            />
+          </div>
         )}
         <button type="submit">
           {requestType.replace(
@@ -81,12 +95,14 @@ const AuthForm = () => {
         </button>
         {error && <p>{error}</p>}
       </form>
-      <button onClick={() => setRegister((prevState) => !prevState)}>
-        {register ? "Have an account? Login here" : "New member? Register here"}
-      </button>
-      <button onClick={guestRegister}>
-        Want to try out the website? try from here
-      </button>
+      <div className="form-buttons">
+        <button onClick={() => setRegister((prevState) => !prevState)}>
+          {register ? "Have an account?" : "New member?"}
+        </button>
+        <button onClick={guestRegister}>
+          Be my <span>Guest</span> User
+        </button>
+      </div>
     </div>
   );
 };

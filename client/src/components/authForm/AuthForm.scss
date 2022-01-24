@@ -1,15 +1,140 @@
-.auth-form {
+@mixin flex-box {
   display: flex;
-  flex-flow: row wrap;
-  width: 500px;
-  background: pink;
-  margin: auto;
+  flex-flow: column wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth {
+  @include flex-box;
+  flex: 1.1;
+  height: 100%;
+  &-form {
+    @include flex-box;
+    justify-content: center;
+    width: 80%;
+    height: 350px;
+    background: rgba(54, 212, 98, 0.15);
+    box-shadow: 0 18px 15px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    margin-block: 50px;
+  }
+}
+
+.form-input-fields {
+  width: 100%;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-block: 2%;
+  &:first-child {
+    margin-top: -30px;
+  }
   label {
-    width: 29%;
-    margin: auto;
+    margin-left: 5%;
+    width: 25%;
   }
   input {
-    width: 70%;
-    margin: auto;
+    font-size: 1.1em;
+    margin-left: 2%;
+    height: 35px;
+    width: 60%;
+    border-radius: 15px;
+    text-align: center;
+    border: 2px inset black;
+    background: rgba(57, 57, 57, 0.5);
+    color: white;
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.503);
+    }
+    &:focus {
+      outline: 2px solid black;
+      outline-offset: 1px;
+    }
+  }
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgba(57, 57, 57, 1) inset !important;
+  box-shadow: 0 0 0 30px rgba(57, 57, 57, 1) inset !important;
+  opacity: 0.5;
+  -webkit-text-fill-color: white;
+}
+.auth-form {
+  button[type="submit"] {
+    box-shadow: 3px 4px 0px 0px #8a2a21;
+    background: linear-gradient(to bottom, #c62d1f 5%, #f24437 100%);
+    background-color: #c62d1f;
+    border-radius: 18px;
+    width: 50%;
+    margin-top: 1em;
+    border: 1px solid #d02718;
+    display: inline-block;
+    color: #ffffff;
+    font-size: 1.2em;
+    text-decoration: none;
+    text-shadow: 0px 1px 0px #810e05;
+    position: absolute;
+    bottom: 25px;
+    &:hover {
+      background: linear-gradient(to bottom, #f24437 5%, #c62d1f 100%);
+      background-color: #f24437;
+    }
+  }
+}
+.form-buttons {
+  button {
+    margin-inline: 20px;
+    box-shadow: 0px 10px 14px -7px #276873;
+    background: linear-gradient(to bottom, #599bb3 5%, #408c99 100%);
+    background-color: #599bb3;
+    border-radius: 8px;
+    display: inline-block;
+    cursor: pointer;
+    color: #ffffff;
+    font-size: 1.1em;
+    padding: 5px 10px;
+    text-decoration: none;
+    text-shadow: 0px 1px 0px #3d768a;
+    &:hover {
+      background: linear-gradient(to bottom, #408c99 5%, #599bb3 100%);
+      background-color: #408c99;
+    }
+    &:active {
+      background: linear-gradient(to bottom, #408c99 5%, #599bb3 100%);
+      background-color: #408c99;
+    }
+    span {
+      font-weight: bold;
+    }
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .auth {
+    transform: scale(0.7);
+    position: relative;
+    top: -170px;
+    &-form {
+      width: 85vw;
+    }
+  }
+  .form-input-fields {
+    font-size: 1.1em;
+  }
+  .form-buttons {
+    button {
+      width: 35vw;
+    }
+  }
+}
+
+@media only screen and (max-width: 600px) and (min-width: 900px) {
+  auth-form {
+    width: 100vw;
   }
 }

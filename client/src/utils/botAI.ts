@@ -1,5 +1,3 @@
-import cardNumbers from "../cards/number";
-import cardTypes from "../cards/types";
 import cardColors from "../cards/colors";
 import arrayShuffle from "array-shuffle";
 interface cardInterface {
@@ -22,7 +20,7 @@ interface drawCardInterface {
 interface colorPromptSetState {
   (show: boolean): any;
 }
-const findDominantColor = (hand: cardInterface[]): string => {
+export const findDominantColor = (hand: cardInterface[]): string => {
   let numberOfCardsWithSameColor = {
     [cardColors.RED]: 0,
     [cardColors.BLUE]: 0,

@@ -1,0 +1,66 @@
+@use "sass:math"
+@function randomNumber($min, $max)
+    $rand: random()
+    $randomNumber: $min + floor($rand * (($max - $min) + 1))
+    @return $randomNumber
+
+$hover-scale: 1.1
+.uno-card
+    height: 140px
+    width: auto
+    transition: all 0.5s linear
+    // background: transparent url("https://cdn.dribbble.com/users/108183/screenshots/2301400/media/6af65dd321fbdf53a04ed7464a644f53.gif") no-repeat scroll center center
+    &:hover
+        transform: scale($hover-scale)
+        z-index: 20
+
+.draw-pile-card
+    position: absolute
+    @for $i from 1 through 11
+        &:nth-child(#{$i})
+            transform: translateX(#{$i*10}px)
+            z-index: #{$i}
+            &:hover
+                transform: translateX(#{$i*10}px) scale($hover-scale)
+.discard-pile-card
+    position: absolute
+    transition: none
+    @for $i from 1 through 5
+        &:nth-child(#{$i})
+            $tr-limit: 20
+            $rot-limit: 35
+            transform: translate(#{randomNumber(-$tr-limit,$tr-limit)}px,#{randomNumber(-$tr-limit,$tr-limit)}px) rotate(#{randomNumber(-$rot-limit,$rot-limit)}deg)
+            z-index: #{$i}
+
+    &:last-child
+        transform: none
+        z-index: 30 !important
+        animation: card-played 0.5s
+        &:hover
+            transform: translate(0) scale($hover-scale)
+
+@keyframes card-played
+    0%
+        -webkit-transform: translate3d(-100%, 0, 0) skewX(10deg)
+        transform: translate3d(-100%, 0, 0) skewX(10deg)
+        opacity: 0
+
+    60%
+        -webkit-transform: skewX(-5deg)
+        transform: skewX(-5deg)
+        opacity: 1
+
+    80%
+        -webkit-transform: skewX(2.5deg)
+        transform: skewX(2.5deg)
+
+    to
+        -webkit-transform: translateZ(0)
+        transform: translateZ(0)
+
+@media only screen and (max-width:1050px)
+    .uno-card
+        height: 90px
+@media only screen and (max-width:690px)
+    .uno-card
+        height: 75px

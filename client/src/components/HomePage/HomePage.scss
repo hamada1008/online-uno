@@ -1,0 +1,52 @@
+@mixin flex-box {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  align-items: center;
+}
+.homepage {
+  @include flex-box;
+  * {
+    transition: all 1s ease;
+  }
+  width: 100vw;
+  height: 100vh;
+  background-image: url("https://staticctf.akamaized.net/8aefmxkxpxwl/1qsQOdn4SDZywxdcULpQDR/7312cd4973de34cbecac302d033bb5d2/UNO_1920x1080.jpg");
+  background-size: auto 120%;
+  background-repeat: no-repeat;
+}
+.welcome {
+  margin-inline: 5%;
+  flex: 0.9;
+  color: white;
+  height: 100%;
+  @include flex-box;
+  flex-flow: column wrap;
+  align-content: center;
+  &-logo {
+    width: min(300px, 50%);
+    padding: 1em;
+    & ~ * {
+      text-align: center;
+      margin-block: 0.5em;
+    }
+  }
+}
+@media only screen and (max-width: 900px) {
+  .homepage {
+    display: inline-block;
+    .welcome {
+      height: fit-content;
+
+      h1 {
+        font-size: 1.8em;
+      }
+      &-logo {
+        width: 150px;
+        & ~ * {
+          font-size: 0.8em;
+        }
+      }
+    }
+  }
+}

@@ -1,10 +1,9 @@
-import "./PlayerDashboard.scss";
-import React, { useEffect, useLayoutEffect, useState } from "react";
-// import { UserContext } from "../../context/Contexts";
-import { useNavigate } from "react-router-dom";
-import NavBar from "../navbar/NavBar";
-import WaitingRoom from "../waitingRoom/WaitingRoom";
-import UnoGame from "../unoGame/UnoGame";
+import "./PlayerDashboard.sass";
+import { useContext, useEffect, useState, useRef } from "react";
+import { UserContext } from "../../context/Contexts";
+import WaitingRoom from "./WaitingRoom/WaitingRoom";
+import UnoGame from "../UnoGameComponents/UnoGame";
+import Navbar from "../NavBar/NavBar";
 import io from "socket.io-client";
 import socketUrl from "../../data/socketUrl";
 
@@ -12,14 +11,15 @@ let socket;
 let currentPlayer;
 
 const PlayerDashboard = () => {
-  const navigate = useNavigate();
+  const { user } = useContext(UserContext);
   const [roomType, setRoomType] = useState("Create");
   const [waitingRoomId, setWaitingRoomId] = useState("");
   const [roomError, setRoomError] = useState("");
   const [roomReady, setRoomReady] = useState("");
   const [isUnoGame, setIsUnoGame] = useState(false);
   const [isWaitingRoom, setIsWaitingRoom] = useState(false);
-
+  const [playersUsernames, setPlayersUsernames] = useState();
+  const inputRef = useRef();
   //socket io onMount
   useEffect(() => {
     socket = io.connect(socketUrl, {
@@ -44,16 +44,15 @@ const PlayerDashboard = () => {
     } else {
       setWaitingRoomId(roomId);
       if (roomType === "Create") {
-        socket.emit("create-room", roomId);
+        socket.emit("create-room", roomId, user?.username);
       } else {
-        socket.emit("join-room", roomId);
+        socket.emit("join-room", roomId, user?.username);
       }
     }
-    console.log(roomError);
+    e.target.reset();
     if (roomError === "") {
       setIsWaitingRoom(true);
     }
-    e.target.reset();
   };
   useEffect(() => {
     //sockets
@@ -63,8 +62,9 @@ const PlayerDashboard = () => {
     socket.on("room-error", (error) => {
       setRoomError(error.errorMessage);
     });
-    socket.on("room-ready", (message) => {
+    socket.on("room-ready", (message, playersUsernames) => {
       setRoomReady(message);
+      setPlayersUsernames(playersUsernames);
       setTimeout(() => {
         setIsUnoGame(true);
       }, 2000);
@@ -72,8 +72,9 @@ const PlayerDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!waitingRoomId) return;
-    if (roomError !== "") return setIsWaitingRoom(false);
+    if (!waitingRoomId) return isWaitingRoom && setIsWaitingRoom(false);
+    if (roomError !== "" || !inputRef.current.value)
+      return isWaitingRoom && setIsWaitingRoom(false);
     setIsWaitingRoom(true);
   }, [roomError]);
 
@@ -85,36 +86,44 @@ const PlayerDashboard = () => {
           socket={socket}
           room={waitingRoomId}
           currentPlayer={currentPlayer}
+          playersUsernames={playersUsernames}
         />
       ) : (
         <>
-          <NavBar />
-          <br />
-          <br />
-
-          <>
-            {!isWaitingRoom ? (
+          <Navbar />
+          <section id="rooms-ui">
+            {!isWaitingRoom && (
               <>
-                <button onClick={() => setRoomType("Create")}>
-                  Create a room
-                </button>
-                <button onClick={() => setRoomType("Join")}>Join a room</button>
-                <br />
-                <br />
-                <form onSubmit={roomCreationHandler} autoComplete="off">
-                  <label htmlFor="room">{roomType} a room</label>
-                  <input
-                    placeholder="Enter the room ID"
-                    name="room"
-                    type="text"
-                    autoComplete="off"
-                  />
-                  <button type="submit"> {roomType} </button>
+                <div className="room-choice-buttons">
+                  <button onClick={() => setRoomType("Create")}>
+                    Create a room
+                  </button>
+                  <button onClick={() => setRoomType("Join")}>
+                    Join a room
+                  </button>
+                </div>
+                <form
+                  onSubmit={roomCreationHandler}
+                  autoComplete="off"
+                  className="room-form"
+                >
+                  <label htmlFor="room-id">{roomType} a room</label>
+                  <div className="room-form-controller">
+                    <input
+                      ref={inputRef}
+                      placeholder="Enter the room ID"
+                      name="room"
+                      id="room-id"
+                      type="text"
+                      autoComplete="off"
+                    />
+                    <button data-testid="room-action" type="submit">
+                      {roomType}
+                    </button>
+                  </div>
                 </form>
-                <br />
-                <br />
               </>
-            ) : null}
+            )}
             {isWaitingRoom ? (
               <WaitingRoom
                 roomId={waitingRoomId}
@@ -122,15 +131,12 @@ const PlayerDashboard = () => {
                 setIsWaitingRoom={setIsWaitingRoom}
                 socket={socket}
                 roomType={roomType}
+                roomReady={roomReady}
               />
             ) : null}
-            <br />
-            <br />
             {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
-            <br />
-            <br />
-            {roomReady ? <h1 style={{ color: "green" }}>{roomReady}</h1> : null}
-          </>
+            {/* {roomReady ? <h1 style={{ color: "green" }}>{roomReady}</h1> : null} */}
+          </section>
         </>
       )}
     </>

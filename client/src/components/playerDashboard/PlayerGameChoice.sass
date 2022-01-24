@@ -1,0 +1,69 @@
+@mixin flex-box
+    display: flex
+    flex-flow: wrap row
+    align-items: center
+    justify-content: center
+
+#game-choices
+    @include flex-box
+    gap: 10%
+    height: 85vh
+    min-width: 350px
+    width: 100vw
+    margin-block: 1.5vh
+
+.game-type
+    --hover-scale: 1
+    --hover-vs-scale: 1
+    --hover-margin: 0
+    @include flex-box
+    height: 50%
+    width: max(37.5%,300px)
+    background-color: #e28901
+    border-radius: 30px
+    box-shadow: 0 20px 15px 2px #000000ad
+    transtion: all 1s ease
+    &:hover
+        background-color: #ff9900
+        --hover-scale: 1.2
+        --hover-vs-scale: 1.5
+        --hover-margin: 8px
+    .player,.player2,.cpu
+        width: max(28%,80px)
+        margin-inline: var(--hover-margin)
+        transform: scale(var(--hover-scale))
+        transition: all 0.5s ease-in-out
+
+    .vs
+        width: max(15%, 75px)
+        margin-inline: calc(20px + var(--hover-margin))
+        transform: scale(var(--hover-vs-scale))
+        transition: all 0.5s ease-in-out
+
+    .player2
+        transform: scale(calc(-1 * var(--hover-scale)), var(--hover-scale))
+
+@media only screen and (max-width: 1075px)
+    .game-type
+        height: 35%
+        &:hover
+            --hover-scale: 1.1
+            --hover-vs-scale: 1.25
+            --hover-margin: 0px
+        .player,.player2,.cpu
+            width: max(25%,50px)
+
+@media only screen and (max-width: 800px)
+    #game-choices
+        flex-direction: column
+        gap: 7.5%
+        .game-type
+            height: 30%
+            width: 70%
+            .player,.player2,.cpu
+                width: max(25%,50px)
+@media only screen and (max-width: 400px)
+    #game-choices
+        .game-type
+            height: 30%
+            width: max(80%,280px)

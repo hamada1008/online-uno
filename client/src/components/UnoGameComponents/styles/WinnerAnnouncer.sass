@@ -1,0 +1,33 @@
+.post-game
+    height: 70vh
+    background-image: url(../../../assets/Misc/confetti.gif)
+    background-size: cover
+    background-repeat: no-repeat
+    display: flex
+    align-items: center
+    justify-content: center
+    flex-direction: column
+    font-size: 4rem
+    line-height: 120px
+    p
+        font-size: 0.7em
+    strong
+        animation: rainbow_animation 5s ease-in-out infinite
+        display: inline-block
+        background: black
+        background: linear-gradient(to right, red, orange , yellow, green, blue, indigo, violet)
+        -webkit-background-clip: text
+        background-clip: text
+        color: transparent
+@keyframes rainbow_animation
+    0%,100%
+        background-position: 0
+        background-size: 400%
+
+    50%
+        background-position: 100%
+
+@media only screen and (max-width:300px)
+    .post-game
+        p
+            font-size: 0.5em

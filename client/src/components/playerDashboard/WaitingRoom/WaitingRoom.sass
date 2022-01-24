@@ -1,0 +1,37 @@
+.waiting-room-modal
+    .modal-title
+        text-align: center
+
+@mixin flex-box
+    display: flex
+    flex-flow: wrap column
+    align-items: center
+    justify-content: space-around
+
+.wr-modal-body
+    @include flex-box
+    height: 45vh
+    font-weight: bold
+    font-size: 1.2rem
+    text-align: center
+    button
+        display: inline-block
+        padding: 0.35em 1.2em
+        border: 0.1em solid #FFFFFF
+        margin: 0 0.3em 0.3em 0
+        border-radius: 15px
+        box-sizing: border-box
+        border: 2px outset grey
+        text-decoration: none
+        font-weight: 300
+        color: white
+        text-align: center
+        transition: all 0.2s
+        background-color: black
+        &:hover
+            color: #000000
+            background-color: #FFFFFF
+
+@media only screen and (max-width: 570px)
+    .wr-modal-body
+        font-size: 1rem

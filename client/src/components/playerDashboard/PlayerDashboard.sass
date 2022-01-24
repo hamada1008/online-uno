@@ -1,0 +1,89 @@
+@mixin flex-box
+    display: flex
+    flex-flow: wrap column
+    align-items: center
+    justify-content: flex-start
+
+#rooms-ui
+    @include flex-box
+    gap: 10%
+    height: 85vh
+    min-width: 350px
+    width: 100vw
+    margin-block: 1.5vh
+    padding-top: 50px
+
+    .room-choice-buttons
+        button
+            margin-inline: 2vw
+            box-shadow: inset 0px 1px 0px 0px #f9eca0
+            background: linear-gradient(to bottom, #f0c911 5%, #f2ab1e 100%)
+            background-color: #f0c911
+            border-radius: 6px
+            border: 1px solid #e65f44
+            display: inline-block
+            color: #c92200
+            text-decoration: none
+            text-shadow: 0px 1px 0px #ded17c
+            color: black
+            padding: 10px 20px
+            &:hover
+                background: linear-gradient(to bottom, #f2ab1e 5%, #f0c911 100%)
+                background-color: #f2ab1e
+            &:active
+                position: relative
+                top: 1px
+
+    .room-form
+        width: 45%
+        box-sizing: border-box
+        input
+            position: relative
+            width: 80%
+            min-width: 200px
+            height: 40px
+            border: 3px inset black
+            border-radius: 15px
+            padding-left: 15px
+            font-family: Arial, Helvetica, sans-serif
+            &::placeholder
+                font-family: "Indie Flower", cursive
+        button[type="submit"]
+            width: 10%
+            min-width: 60px
+            margin-left: 5%
+            height: 35px
+            background-color: red
+            font-weight: bold
+            border-width: 1px
+            color: #ffffff
+            border-color: #337fed
+            border-radius: 6px
+            box-shadow: inset 0px 1px 0px 0px #97c4fe
+            text-shadow: inset 0px 1px 0px #1570cd
+            background: linear-gradient(#3d94f6, #1e62d0)
+            &:hover
+                background: linear-gradient(#1e62d0, #3d94f6)
+        label
+            font-weight: bold
+            left: 0
+
+.room-form-controller
+    width: 100%
+
+@media only screen and (max-width: 900px)
+    .room-form
+        width: 70% !important
+@media only screen and (max-width: 600px)
+    .room-choice-buttons
+        button
+            padding: 0
+            font-size: 0.8rem
+            font-weight: bold
+
+    .room-form-controller
+        @include flex-box
+        input
+            width: 100% !important
+        button
+            margin-block-start: 20px

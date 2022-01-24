@@ -1,0 +1,84 @@
+
+$circle-radius: 150px
+.pick-a-color-wheel
+    height: 375px
+    width: fit-content
+    button
+        width: $circle-radius
+        height: $circle-radius
+        position: absolute
+
+        &:hover
+            outline: 2px solid black
+            outline-offset: 3px
+
+#red
+    background: red
+    border-radius: 0 $circle-radius 0 0
+    inset: 2.5% auto auto 50%
+    transform: translateX(-50%) rotate(-45deg)
+    &:hover
+        animation: color-rotation-red 1.5s linear infinite
+#blue
+    background: blue
+    border-radius: 0 0 $circle-radius 0
+    inset: 50% 12.5% auto auto
+    transform: translateY(-50%) rotate(-45deg)
+    &:hover
+        animation: color-rotation-blue 1.5s linear infinite
+#green
+    background: green
+    border-radius: 0 0 0 $circle-radius
+    inset: auto 50% 2.5% auto
+    transform: translateX(50%) rotate(-45deg)
+    &:hover
+        animation: color-rotation-green 1.5s linear infinite
+#yellow
+    background: yellow
+    border-radius: $circle-radius 0 0 0
+    inset: 50% auto auto 12.5%
+    transform: translateY(-50%) rotate(-45deg)
+    &:hover
+        animation: color-rotation-yellow 1.5s linear infinite
+
+@keyframes color-rotation-red
+    0%
+        background: red
+    50%
+        background: #ff5555
+    100%
+        background: red
+@keyframes color-rotation-blue
+    0%
+        background: blue
+    50%
+        background: #3949ff
+    100%
+        background: blue
+@keyframes color-rotation-green
+    0%
+        background: green
+    50%
+        background: #81ff27
+    100%
+        background: green
+@keyframes color-rotation-yellow
+    0%
+        background: yellow
+    50%
+        background: #fff7b7
+    100%
+        background: yellow
+
+@media only screen and (max-width:600px)
+    .modal-content
+        width: 95vw !important
+        margin-inline: 1.5vw
+    .pick-a-color-wheel
+        height: 75vmin
+        button
+            zoom: 0.75
+    #yellow
+        inset: 50% auto auto 9%
+    #blue
+        inset: 50% 9% auto auto

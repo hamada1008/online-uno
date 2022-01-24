@@ -1,25 +1,12 @@
 import colors from "./colors.ts";
 import numbers from "./number.ts";
 import types from "./types.ts";
-// interface cardType {
-//   type: number;
-//   number: number;
-//   color: string;
-// }
-// type deckType = cardType[];
+
 let deck = [];
 const createCards = () => {
-  //76 normal card
-  // from 0 to 9 Red x2
-  //from 0 to 9 blue x2
-  //from 0 to 9 green x2
-  //from 0 to 9 yellow x2
-  // 24 special cards
-  // draw 2 x 8
-  // skip x 8
-  //reverse x 8
-  // 4 wild cards
-  //4 wild draw 4
+  //76 normal card (0-9 /4 colors / 2 each color)
+  // 24 special cards (SKIP REVERSE +2 / 2 each color)
+  // 8 WILD cards (4 x Wild / 4x Wild+4)
 
   deck.push({ type: types.NORMAL, number: 0, color: colors.RED });
   for (let i = 1; i < 10; i++) {
