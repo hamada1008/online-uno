@@ -2,7 +2,7 @@ const backendUrl = (type, id) => {
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:5000/api/"
-      : "https://online-uno-server.herokuapp.com/";
+      : "https://online-uno-server.herokuapp.com/api/";
 
   switch (type) {
     case "rating":

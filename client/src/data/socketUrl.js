@@ -1,5 +1,5 @@
 const socketUrl =
   process.env.NODE_ENV === "development"
     ? "http://localhost:5000/game"
-    : "https://online-uno-server.herokuapp.com/";
+    : "https://online-uno-server.herokuapp.com/game";
 export default socketUrl;
