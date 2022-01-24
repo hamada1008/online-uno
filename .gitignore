@@ -6,9 +6,12 @@ node_modules/
 /.pnp
 .pnp.js
 .env
+
+# client
 # testing
 /coverage
 /.nyc_output
+.nyc_output/
 # production
 /build
 build/
