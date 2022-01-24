@@ -13,7 +13,7 @@
 
 ## Live Demo
 
-[Live demo](http://xxx.com/)
+[Live demo](https://online-uno.netlify.app/)
 
 ## Built With 🛠
 

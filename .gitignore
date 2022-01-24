@@ -8,9 +8,10 @@ node_modules/
 .env
 # testing
 /coverage
-
+/.nyc_output
 # production
 /build
+build/
 /dist
 dist/
 # misc
