@@ -3,6 +3,7 @@ import { useContext, useEffect, useState, useRef } from "react";
 import { UserContext } from "../../context/Contexts";
 import WaitingRoom from "./WaitingRoom/WaitingRoom";
 import UnoGame from "../UnoGameComponents/UnoGame";
+import { TailSpin } from "react-loader-spinner";
 import Navbar from "../NavBar/NavBar";
 import io from "socket.io-client";
 import socketUrl from "../../data/socketUrl";
@@ -19,7 +20,9 @@ const PlayerDashboard = () => {
   const [isUnoGame, setIsUnoGame] = useState(false);
   const [isWaitingRoom, setIsWaitingRoom] = useState(false);
   const [playersUsernames, setPlayersUsernames] = useState();
+  const [socketConnected, setSocketConnected] = useState(false);
   const inputRef = useRef();
+  const intervalRef = useRef();
   //socket io onMount
   useEffect(() => {
     socket = io.connect(socketUrl, {
@@ -54,6 +57,7 @@ const PlayerDashboard = () => {
       setIsWaitingRoom(true);
     }
   };
+
   useEffect(() => {
     //sockets
     socket.on("get-player-number", (number) => {
@@ -78,6 +82,17 @@ const PlayerDashboard = () => {
     setIsWaitingRoom(true);
   }, [roomError]);
 
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      if (socket?.connected) setSocketConnected(true);
+    }, 2000);
+    return () => clearInterval(intervalRef.current);
+  }, []);
+  useEffect(() => {
+    if (!socketConnected) return;
+    clearInterval(intervalRef.current);
+  }, [socketConnected]);
+
   return (
     <>
       {isUnoGame ? (
@@ -91,52 +106,59 @@ const PlayerDashboard = () => {
       ) : (
         <>
           <Navbar />
-          <section id="rooms-ui">
-            {!isWaitingRoom && (
-              <>
-                <div className="room-choice-buttons">
-                  <button onClick={() => setRoomType("Create")}>
-                    Create a room
-                  </button>
-                  <button onClick={() => setRoomType("Join")}>
-                    Join a room
-                  </button>
-                </div>
-                <form
-                  onSubmit={roomCreationHandler}
-                  autoComplete="off"
-                  className="room-form"
-                >
-                  <label htmlFor="room-id">{roomType} a room</label>
-                  <div className="room-form-controller">
-                    <input
-                      ref={inputRef}
-                      placeholder="Enter the room ID"
-                      name="room"
-                      id="room-id"
-                      type="text"
-                      autoComplete="off"
-                    />
-                    <button data-testid="room-action" type="submit">
-                      {roomType}
+
+          {!socketConnected ? (
+            <section id="rooms-ui">
+              {!isWaitingRoom && (
+                <>
+                  <div className="room-choice-buttons">
+                    <button onClick={() => setRoomType("Create")}>
+                      Create a room
+                    </button>
+                    <button onClick={() => setRoomType("Join")}>
+                      Join a room
                     </button>
                   </div>
-                </form>
-              </>
-            )}
-            {isWaitingRoom ? (
-              <WaitingRoom
-                roomId={waitingRoomId}
-                isWaitingRoom={isWaitingRoom}
-                setIsWaitingRoom={setIsWaitingRoom}
-                socket={socket}
-                roomType={roomType}
-                roomReady={roomReady}
-              />
-            ) : null}
-            {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
-            {/* {roomReady ? <h1 style={{ color: "green" }}>{roomReady}</h1> : null} */}
-          </section>
+                  <form
+                    onSubmit={roomCreationHandler}
+                    autoComplete="off"
+                    className="room-form"
+                  >
+                    <label htmlFor="room-id">{roomType} a room</label>
+                    <div className="room-form-controller">
+                      <input
+                        ref={inputRef}
+                        placeholder="Enter the room ID"
+                        name="room"
+                        id="room-id"
+                        type="text"
+                        autoComplete="off"
+                      />
+                      <button data-testid="room-action" type="submit">
+                        {roomType}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+              {isWaitingRoom ? (
+                <WaitingRoom
+                  roomId={waitingRoomId}
+                  isWaitingRoom={isWaitingRoom}
+                  setIsWaitingRoom={setIsWaitingRoom}
+                  socket={socket}
+                  roomType={roomType}
+                  roomReady={roomReady}
+                />
+              ) : null}
+              {roomError ? <h1 style={{ color: "red" }}>{roomError}</h1> : null}
+            </section>
+          ) : (
+            <section className="waiting-for-socket">
+              <TailSpin width="100" height="100" />
+              <span>waiting for connection</span>
+            </section>
+          )}
         </>
       )}
     </>

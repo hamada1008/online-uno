@@ -44,9 +44,7 @@ const UnoGame = ({
   const [playerOneUnoState, setPlayerOneUnoState] = useState(false);
   const [playerTwoUnoState, setPlayerTwoUnoState] = useState(false);
   const [turnCount, setTurnCount] = useState(true);
-  const [failedUnoMessage, setFailedUnoMessage] = useState(
-    "Sorry player2 , you forgot to say uno, you got +2 cards"
-  );
+  const [failedUnoMessage, setFailedUnoMessage] = useState("");
   const [wasCardDrawnFromDeckPile, setWasCardDrawnFromDeckPile] =
     useState(false);
   const [isColorPrompt, setIsColorPrompt] = useState(false);
