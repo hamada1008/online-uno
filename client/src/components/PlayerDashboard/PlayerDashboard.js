@@ -107,7 +107,7 @@ const PlayerDashboard = () => {
         <>
           <Navbar />
 
-          {!socketConnected ? (
+          {socketConnected ? (
             <section id="rooms-ui">
               {!isWaitingRoom && (
                 <>
