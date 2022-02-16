@@ -760,7 +760,7 @@ const UnoGame = ({
             {gameType === "multiplayer" ? (
               <strong>
                 <span>Player 2:</span>
-                {" " + playersUsernames?.player2.startsWith("guest")
+                {" " + playersUsernames?.player2?.startsWith("guest")
                   ? playersUsernames?.player2.substring(0, 12)
                   : playersUsernames?.player2}
               </strong>
@@ -812,13 +812,13 @@ const UnoGame = ({
             {gameType === "multiplayer" ? (
               <strong>
                 <span>Player 1:</span>
-                {" " + playersUsernames?.player1.startsWith("guest")
+                {" " + playersUsernames?.player1?.startsWith("guest")
                   ? playersUsernames?.player1.substring(0, 12)
                   : playersUsernames?.player1}
               </strong>
             ) : (
               <strong>
-                {user?.username.startsWith("guest")
+                {user?.username?.startsWith("guest")
                   ? user?.username.substring(0, 12)
                   : user?.username}
               </strong>

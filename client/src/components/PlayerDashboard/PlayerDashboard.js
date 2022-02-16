@@ -27,8 +27,6 @@ const PlayerDashboard = () => {
   useEffect(() => {
     socket = io.connect(socketUrl, {
       transports: ["websocket"],
-      reconnectionAttempts: 10,
-      timeout: 60,
     });
     return socket.off("disconnect");
   }, []);

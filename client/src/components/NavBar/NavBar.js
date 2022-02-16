@@ -47,7 +47,7 @@ const Navbar = () => {
             <span className="nav-label">Username</span>
             <span className="nav-data">
               {" "}
-              {user?.username.startsWith("guest")
+              {user?.username?.startsWith("guest")
                 ? user?.username.substring(0, 12)
                 : user?.username}
             </span>
