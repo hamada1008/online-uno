@@ -1,4 +1,4 @@
-import { useLayoutEffect, useCallback, useContext } from "react";
+import { useLayoutEffect, useEffect, useCallback, useContext } from "react";
 import { UserContext } from "../context/Contexts";
 import {
   BrowserRouter as Router,
@@ -13,6 +13,7 @@ import PlayerGameChoice from "../components/PlayerDashboard/PlayerGameChoice";
 import UnoGame from "../components/UnoGameComponents/UnoGame";
 import RequireAuth from "./RequireAuth";
 import url from "../data/backendUrl";
+import srcArr from "../utils/imageSourceArray.js";
 import axios from "axios";
 
 const DefaultRouter = () => {
@@ -41,6 +42,25 @@ const DefaultRouter = () => {
   useLayoutEffect(() => {
     authorizeToken();
   }, [authorizeToken]);
+
+  //Game Assets loader function
+
+  const casheImages = async (srcArr) => {
+    const loadingImagePromises = await srcArr.map((src) => {
+      return new Promise((resolve, reject) => {
+        let img = new Image();
+        img.src = src;
+        img.onload = resolve();
+        img.onerror = reject();
+      });
+    });
+    await Promise.all(loadingImagePromises);
+  };
+
+  //Executing the Assets loader
+  useEffect(() => {
+    casheImages(srcArr);
+  }, []);
 
   return (
     <Router>

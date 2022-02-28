@@ -18,10 +18,6 @@ import ChatWidget from "../ChatWidget/ChatWidget.js";
 import ScreenDisable from "./ScreenDisable.js";
 import { botAINormal, botAIChallenge, botAIColor } from "../../utils/botAI.ts";
 import { UserContext } from "../../context/Contexts.js";
-import redBg from "../../assets/Backgrounds/game-bg-red.svg";
-import blueBg from "../../assets/Backgrounds/game-bg-blue.svg";
-import greenBg from "../../assets/Backgrounds/game-bg-green.svg";
-import yellowBg from "../../assets/Backgrounds/game-bg-yellow.svg";
 import { MutatingDots } from "react-loader-spinner";
 import "./styles/UnoGame.sass";
 
@@ -76,7 +72,6 @@ const UnoGame = ({
   );
   const playerHandRef = useRef();
   const opposingPlayerHandRef = useRef();
-
   // Starting the game
 
   const gameStarter = useCallback(() => {
@@ -182,23 +177,23 @@ const UnoGame = ({
           }
           playerOneHand &&
             setPlayerOneHand((prevState) => {
-              if (prevState.length === playerOneHand.length) return prevState;
+              if (prevState?.length === playerOneHand?.length) return prevState;
               return playerOneHand;
             });
           playerTwoHand &&
             setPlayerTwoHand((prevState) => {
-              if (prevState.length === playerTwoHand.length) return prevState;
+              if (prevState?.length === playerTwoHand?.length) return prevState;
               return playerTwoHand;
             });
           discardPile &&
             setDiscardPile((prevState) => {
-              if (prevState.length === discardPile.length) return prevState;
+              if (prevState?.length === discardPile?.length) return prevState;
               return discardPile;
             });
           discardPileFirstCard && setDiscardPileFirstCard(discardPileFirstCard);
           drawPile &&
             setDrawPile((prevState) => {
-              if (prevState.length === drawPile.length) return prevState;
+              if (prevState?.length === drawPile?.length) return prevState;
               return drawPile;
             });
           typeof turnCount === "boolean" && setTurnCount(turnCount);
@@ -230,7 +225,7 @@ const UnoGame = ({
       socket.emit("game-update", room, {
         playerOneHand,
       });
-  }, [playerOneHand.length]);
+  }, [playerOneHand?.length]);
   useEffect(() => {
     if (!gameStart) return;
     if (gameType !== "multiplayer") return;
@@ -238,7 +233,7 @@ const UnoGame = ({
       socket.emit("game-update", room, {
         playerTwoHand,
       });
-  }, [playerTwoHand.length]);
+  }, [playerTwoHand?.length]);
   useEffect(() => {
     if (!gameStart) return;
     if (gameType !== "multiplayer") return;
@@ -246,7 +241,7 @@ const UnoGame = ({
       socket.emit("game-update", room, {
         discardPile,
       });
-  }, [discardPile.length]);
+  }, [discardPile?.length]);
   useEffect(() => {
     if (!gameStart) return;
     if (gameType !== "multiplayer") return;
@@ -262,7 +257,7 @@ const UnoGame = ({
       socket.emit("game-update", room, {
         drawPile,
       });
-  }, [drawPile.length]);
+  }, [drawPile?.length]);
   useEffect(() => {
     if (!gameStart) return;
     if (gameType !== "multiplayer") return;
@@ -309,7 +304,7 @@ const UnoGame = ({
     if (!gameStart) return;
     if (gameType === "multiplayer" && !didMultiplayerStart) return;
     switch (true) {
-      case playerOneHand.length === 0:
+      case playerOneHand?.length === 0:
         setIsWinner({
           exist: true,
           winningPlayer: 1,
@@ -317,7 +312,7 @@ const UnoGame = ({
           playerTwoScore,
         });
         return;
-      case playerTwoHand.length === 0:
+      case playerTwoHand?.length === 0:
         setIsWinner({
           exist: true,
           winningPlayer: 2,
@@ -349,14 +344,14 @@ const UnoGame = ({
   //detecting Empty deck & suffling with card pile
 
   const mergeDeckWithPile = useCallback(() => {
-    if (!gameStart || discardPile.length === 1) return;
-    setDrawPile(arrayShuffle(discardPile.slice(0, discardPile.length - 1)));
+    if (!gameStart || discardPile?.length === 1) return;
+    setDrawPile(arrayShuffle(discardPile.slice(0, discardPile?.length - 1)));
     setDiscardPile([discardPileFirstCard]);
   }, [discardPileFirstCard, gameStart, discardPile]);
 
   //merges deck with pile whenever draw pile becomes empty
   useEffect(() => {
-    if (drawPile.length !== 0) return;
+    if (drawPile?.length !== 0) return;
     if (
       gameType === "multiplayer" &&
       ((turnCount && currentPlayerNumber === 1) ||
@@ -431,11 +426,11 @@ const UnoGame = ({
   // Uno state Resetter
   useEffect(() => {
     if (!gameStart) return;
-    if (playerOneUnoState && playerOneHand.length !== 2) {
+    if (playerOneUnoState && playerOneHand?.length !== 2) {
       setPlayerOneUnoState(false);
       return;
     }
-    if (playerTwoUnoState && playerTwoHand.length !== 2) {
+    if (playerTwoUnoState && playerTwoHand?.length !== 2) {
       setPlayerTwoUnoState(false);
       return;
     }
@@ -456,19 +451,19 @@ const UnoGame = ({
   useEffect(() => {
     if (!gameStart || gameType === "multiplayer") return;
     if (turnCount) return;
-    if (playerTwoHand.length === 2 && !playerTwoUnoState)
+    if (playerTwoHand?.length === 2 && !playerTwoUnoState)
       return pileDrawlogicHandling(1);
     botAINormal(playCard, 2, playerTwoHand, pileDrawlogicHandling);
   }, [
     gameStart,
     turnCount,
     playerTwoUnoState,
-    playerTwoHand.length,
-    playerOneHand.length,
+    playerTwoHand?.length,
+    playerOneHand?.length,
     wasCardDrawnFromDeckPile,
     discardPileFirstCardMemo,
-    discardPile.length,
-    drawPile.length,
+    discardPile?.length,
+    drawPile?.length,
   ]);
 
   // player 2 AI color Prompt
@@ -488,7 +483,7 @@ const UnoGame = ({
 
   //player Two AI uno announcing
   useEffect(() => {
-    if (!gameStart || playerTwoHand.length !== 2 || playerTwoUnoState) return;
+    if (!gameStart || playerTwoHand?.length !== 2 || playerTwoUnoState) return;
     unoButtonLogicHandling(2);
   });
 
@@ -497,14 +492,7 @@ const UnoGame = ({
   useEffect(() => {
     const unoGameContainer = document.getElementById("uno-game");
     if (!discardPileFirstCard?.color) return;
-    const backgrounds = {
-      red: `url(${redBg})`,
-      blue: `url(${blueBg})`,
-      green: `url(${greenBg})`,
-      yellow: `url(${yellowBg})`,
-    };
-    unoGameContainer.style.backgroundImage =
-      backgrounds[discardPileFirstCard.color];
+    unoGameContainer.style.backgroundImage = `url(/assets/Backgrounds/game-bg-${discardPileFirstCard.color}.svg)`;
   }, [discardPileFirstCard?.color]);
 
   useEffect(() => {
@@ -518,28 +506,28 @@ const UnoGame = ({
         i.style.position = "static";
       }
     } else {
-      for (let i = 0; i < playerHandChildren.length; i++) {
+      for (let i = 0; i < playerHandChildren?.length; i++) {
         playerHandChildren[i].style.position = "absolute";
         playerHandChildren[i].style.zIndex = i;
         playerHandChildren[i].style.left = `${i * squeezeDistance}vw`;
       }
     }
     //opposing player hand styling
-    if (opposingPlayerHandChildren.length < 8) {
+    if (opposingPlayerHandChildren?.length < 8) {
       for (let i of opposingPlayerHandChildren) {
         i.style.position = "static";
       }
     } else {
-      for (let i = 0; i < opposingPlayerHandChildren.length; i++) {
+      for (let i = 0; i < opposingPlayerHandChildren?.length; i++) {
         opposingPlayerHandChildren[i].style.position = "absolute";
         opposingPlayerHandChildren[i].style.zIndex =
-          opposingPlayerHandChildren.length - i;
+          opposingPlayerHandChildren?.length - i;
         opposingPlayerHandChildren[i].style.right = `${
           i * opposingSqueezeDistance
         }vw`;
       }
     }
-  }, [playerOneHand.length, playerTwoHand.length]);
+  }, [playerOneHand?.length, playerTwoHand?.length]);
 
   //Logic when a card is played
   const cardPlayingLogicHandling = (card, player, newColor) => {
@@ -566,8 +554,8 @@ const UnoGame = ({
 
   const cardDrawLogicHandling = (player, numberOfCardsToDraw) => {
     let remainingCardsToDraw = 0;
-    if (numberOfCardsToDraw > drawPile.length) {
-      remainingCardsToDraw = numberOfCardsToDraw - drawPile.length;
+    if (numberOfCardsToDraw > drawPile?.length) {
+      remainingCardsToDraw = numberOfCardsToDraw - drawPile?.length;
       setDrawFromPileAfterShuffle({
         player: player === 1 ? 2 : 1,
         numberOfCards: remainingCardsToDraw,
@@ -630,7 +618,7 @@ const UnoGame = ({
           card.color === discardPileFirstCard.color ||
           card.number === discardPileFirstCard.number
         ) {
-          if (drawPile.length + discardPile.length < 4) {
+          if (drawPile?.length + discardPile?.length < 4) {
             // console.log("cannot draw from deck unless you play cards in pile");
             return isCardPlayable;
           }
@@ -654,7 +642,7 @@ const UnoGame = ({
         setWildCardPlayerData({ cardType: cardTypes.WILD, player });
         break;
       case cardTypes.WILD_FOUR:
-        if (drawPile.length + discardPile.length < 6) {
+        if (drawPile?.length + discardPile?.length < 6) {
           // console.log("cannot draw from deck unless you play cards in pile");
           return isCardPlayable;
         }
@@ -669,7 +657,7 @@ const UnoGame = ({
     }
     if (
       player === 1 &&
-      playerOneHand.length === 2 &&
+      playerOneHand?.length === 2 &&
       !playerOneUnoState &&
       isCardPlayable
     ) {
@@ -682,7 +670,7 @@ const UnoGame = ({
     }
     if (
       player === 2 &&
-      playerTwoHand.length === 2 &&
+      playerTwoHand?.length === 2 &&
       !playerTwoUnoState &&
       isCardPlayable
     ) {
@@ -708,7 +696,7 @@ const UnoGame = ({
     if ((player === 2 && turnCount) || (player === 1 && !turnCount)) return;
     let isTherePlayableCardInHand = false;
     const currentPlayerHand = player === 1 ? playerOneHand : playerTwoHand;
-    if (currentPlayerHand.length !== 2) return;
+    if (currentPlayerHand?.length !== 2) return;
     for (let i of currentPlayerHand) {
       if (playCard(i, player, true)) {
         isTherePlayableCardInHand = true;
@@ -863,7 +851,7 @@ const UnoGame = ({
           <div data-testid="discard-pile" className="discard-pile">
             {discardPile.map(
               (card, index) =>
-                discardPile.length - index < 6 && (
+                discardPile?.length - index < 6 && (
                   <CardImage
                     key={index}
                     card={card}
