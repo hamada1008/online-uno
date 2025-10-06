@@ -12,7 +12,7 @@ const Navbar = () => {
   const token = localStorage.getItem("authToken");
   const lastRating = useRef();
 
-  const [rating, setRating] = useState(lastRating.current);
+  const [rating, setRating] = useState(lastRating.current ?? 0);
 
   const logoutHandler = () => {
     let isGuest = localStorage.getItem("isGuest");

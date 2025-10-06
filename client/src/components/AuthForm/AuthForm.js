@@ -54,6 +54,11 @@ const AuthForm = () => {
       setError(err.response?.data?.msg);
     }
   };
+  const playOffline = () => {
+    localStorage.setItem("authToken", "offline");
+    localStorage.setItem("isOffline", "Yes");
+    setUser({ isLogging: true });
+  };
   return (
     <div className="auth">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -99,8 +104,11 @@ const AuthForm = () => {
         <button onClick={() => setRegister((prevState) => !prevState)}>
           {register ? "Have an account?" : "New member?"}
         </button>
-        <button onClick={guestRegister}>
+        {/* <button onClick={guestRegister}>
           Be my <span>Guest</span> User
+        </button> */}
+        <button onClick={playOffline}>
+          Play <span>Offline</span>
         </button>
       </div>
     </div>

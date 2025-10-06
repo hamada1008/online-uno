@@ -15,10 +15,12 @@ import RequireAuth from "./RequireAuth";
 import url from "../data/backendUrl";
 import srcArr from "../utils/imageSourceArray.js";
 import axios from "axios";
+import isOfflineGameplay from "../utils/isOfflineGameplay";
 
 const DefaultRouter = () => {
   const { user, setUser } = useContext(UserContext);
   const token = localStorage.getItem("authToken");
+  const isOffline = isOfflineGameplay();
 
   const authorizeToken = useCallback(async () => {
     if (!token) {
@@ -28,6 +30,13 @@ const DefaultRouter = () => {
     }
     if ((user && !user?.isLogging) || user === undefined) return;
     try {
+      if (isOffline) {
+        setUser({
+          _id: Math.random(),
+          username: "Offline Mode",
+        });
+        return;
+      }
       let response = await axios.get(url(), {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -37,7 +46,7 @@ const DefaultRouter = () => {
       console.log(err?.response?.data?.msg);
       setUser(undefined);
     }
-  }, [token, user]);
+  }, [token, user, isOffline]);
 
   useLayoutEffect(() => {
     authorizeToken();

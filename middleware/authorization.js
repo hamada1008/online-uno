@@ -2,6 +2,8 @@ const ErrorRes = require("../utilities/errorRes");
 const User = require("../model/user");
 const jwt = require("jsonwebtoken");
 const authorization = async (req, res, next) => {
+  //bypass db
+  // return next();
   let token;
   req.headers.authorization?.startsWith("Bearer") &&
     (token = req.headers.authorization.split(" ")[1]);

@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "nodemon --no-warnings index.js",
     "react": "cd client && npm start",
     "test": "mocha --recursive --timeout 120000 --exit",
     "nyc": "nyc mocha --recursive --timeout 120000 --exit"

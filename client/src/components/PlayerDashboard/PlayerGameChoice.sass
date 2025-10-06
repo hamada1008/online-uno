@@ -43,6 +43,10 @@
     .player2
         transform: scale(calc(-1 * var(--hover-scale)), var(--hover-scale))
 
+.game-type-disabled
+    pointer-events: none !important
+    filter: grayscale(1) !important
+
 @media only screen and (max-width: 1075px)
     .game-type
         height: 35%
