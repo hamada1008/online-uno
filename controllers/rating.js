@@ -2,6 +2,8 @@ const User = require("../model/user");
 const ErrorRes = require("../utilities/errorRes");
 exports.getRatingController = async (req, res, next) => {
   try {
+    //bypass db
+    // return res.status(200).json({ success: true, msg: 12 });
     const user = await User.findById(req.params.id, "-_id rating");
     res.status(200).json({ success: true, msg: user.rating });
   } catch (error) {

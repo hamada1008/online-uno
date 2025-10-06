@@ -20,13 +20,12 @@
     "react-loader-spinner": "^5.0.8",
     "react-router-dom": "^6.2.1",
     "react-scripts": "^4.0.3",
-    "sass": "^1.45.0",
     "socket.io-client": "^4.4.0",
     "styled-components": "^5.3.3",
     "web-vitals": "^1.1.2"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts --openssl-legacy-provider start",
     "build": "react-scripts --openssl-legacy-provider build",
     "test": "react-scripts test --detectOpenHandles --transformIgnorePatterns \"node_modules/(?!your-module-name)/\"",
     "eject": "react-scripts eject"
@@ -52,8 +51,8 @@
   "devDependencies": {
     "babel-plugin-syntax-class-properties": "^6.13.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
-    "node-sass": "^7.0.1",
-    "typescript": "^4.5.5"
+    "typescript": "^4.5.5",
+    "sass": "^1.56.0"
   },
   "plugins": [
     [

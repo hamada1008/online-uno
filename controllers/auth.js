@@ -40,6 +40,8 @@ exports.logoutGuestController = async (req, res, next) => {
 };
 exports.loginController = async (req, res, next) => {
   const { email, password } = req.body;
+  //bypass db
+  // return res.status(200).json({ success: true, msg: "ey1231123132" });
   if (!email || !password)
     return next(new ErrorRes("Please Fill in the form fields", 400));
   try {
